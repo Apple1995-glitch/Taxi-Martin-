@@ -1,57 +1,455 @@
 <!DOCTYPE html>
+
 <html lang="cs">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taxi Martin</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #111; color: #fff; margin: 0; padding: 20px; text-align: center; }
-    .wrap { max-width: 500px; margin: 0 auto; background: #222; padding: 20px; border-radius: 12px; }
-    h1 { color: #f5c518; margin-bottom: 5px; }
-    p { font-size: 1.1em; color: #ccc; }
-    .btn-call { display: block; background: #28a745; color: white; text-decoration: none; padding: 15px; font-size: 1.3em; font-weight: bold; border-radius: 8px; margin: 20px 0; }
-    .btn-call:hover { background: #218838; }
-    form { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; text-align: left; }
-    label { font-size: 0.9em; color: #aaa; }
-    input, select { padding: 12px; border-radius: 6px; border: 1px solid #444; background: #333; color: #fff; font-size: 1em; width: 100%; box-sizing: border-box; }
-    button { background: #f5c518; color: #000; font-weight: bold; padding: 14px; border: none; border-radius: 6px; font-size: 1.1em; cursor: pointer; margin-top: 10px; }
-    button:hover { background: #e0b000; }
-  </style>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Taxi Martin</title>
+
+<style>
+
+body {
+
+font-family: Arial, sans-serif;
+
+background: #111;
+
+color: #fff;
+
+margin: 0;
+
+padding: 20px;
+
+text-align: center;
+
+}
+
+.wrap {
+
+max-width: 500px;
+
+margin: 0 auto;
+
+background: #222;
+
+padding: 20px;
+
+border-radius: 12px;
+
+}
+
+h1 {
+
+color: #f5c518;
+
+margin-bottom: 5px;
+
+}
+
+p {
+
+font-size: 1.1em;
+
+color: #ccc;
+
+}
+
+.btn-call {
+
+display: block;
+
+background: #28a745;
+
+color: white;
+
+text-decoration: none;
+
+padding: 15px;
+
+font-size: 1.3em;
+
+font-weight: bold;
+
+border-radius: 8px;
+
+margin: 20px 0;
+
+}
+
+.btn-call:hover {
+
+background: #218838;
+
+}
+
+form {
+
+display: flex;
+
+flex-direction: column;
+
+gap: 12px;
+
+margin-top: 20px;
+
+text-align: left;
+
+}
+
+label {
+
+font-size: 0.9em;
+
+color: #aaa;
+
+}
+
+input,
+
+select {
+
+padding: 12px;
+
+border-radius: 6px;
+
+border: 1px solid #444;
+
+background: #333;
+
+color: #fff;
+
+font-size: 1em;
+
+width: 100%;
+
+box-sizing: border-box;
+
+}
+
+button {
+
+background: #f5c518;
+
+color: #000;
+
+font-weight: bold;
+
+padding: 14px;
+
+border: none;
+
+border-radius: 6px;
+
+font-size: 1.1em;
+
+cursor: pointer;
+
+margin-top: 10px;
+
+}
+
+button:hover {
+
+background: #e0b000;
+
+}
+
+.btn-location {
+
+background: #28a745;
+
+color: white;
+
+font-weight: bold;
+
+padding: 12px;
+
+border: none;
+
+border-radius: 6px;
+
+font-size: 1em;
+
+cursor: pointer;
+
+margin-top: 0;
+
+}
+
+.btn-location:hover {
+
+background: #218838;
+
+}
+
+#gpsStatus {
+
+font-size: 0.9em;
+
+color: #aaa;
+
+text-align: center;
+
+margin-top: -5px;
+
+}
+
+</style>
+
 </head>
+
 <body>
-  <div class="wrap">
-    <h1>🚖 Taxi Martin</h1>
-    <p>Rychlá a spolehlivá doprava</p>
-    
-    <!-- Tlačítko pro přímé volání -->
-    <a href="tel:777020281" class="btn-call">📞 Zavolat Taxi Martin<br>(777 020 281)</a>
 
-    <hr style="border: 0; border-top: 1px solid #444; margin: 25px 0;">
+<div class="wrap">
 
-    <h3>Online Objednávka</h3>
-    
-    <!-- Formulář s odesíláním na e-mail -->
-    <form action="https://formsubmit.co/jardaextrifitclub@centrum.cz" method="POST">
-      <input type="hidden" name="_subject" value="Nová objednávka Taxi Martin!">
-      <input type="hidden" name="_captcha" value="false">
+<h1>🚖 Taxi Martin</h1>
 
-      <label for="name">Jméno a příjmení:</label>
-      <input type="text" id="name" name="Jmeno" placeholder="Vaše jméno" required>
+<p>Rychlá a spolehlivá doprava</p>
 
-      <label for="phone">Telefonní číslo:</label>
-      <input type="tel" id="phone" name="Telefon" placeholder="Např. 777 020 281" required>
+<a href="tel:777020281" class="btn-call">
 
-      <label for="from">Odkud (adresa / místo):</label>
-      <input type="text" id="from" name="Odkud" placeholder="Ulice, město nebo např. Hlavní nádraží" required>
+📞 Zavolat Taxi Martin<br>
 
-      <label for="to">Kam (cílová adresa):</label>
-      <input type="text" id="to" name="Kam" placeholder="Cílová adresa" required>
+(777 020 281)
 
-      <label for="time">Čas přistavení:</label>
-      <input type="text" id="time" name="Cas_pristaveni" placeholder="Co nejdříve / přesný čas" required>
+</a>
 
-      <button type="submit">Odeslat objednávku</button>
-    </form>
-  </div>
+<hr style="border: 0; border-top: 1px solid #444; margin: 25px 0;">
+
+<h3>Online Objednávka</h3>
+
+<form action="https://formsubmit.co/jardaextrifitclub@centrum.cz" method="POST">
+
+<input type="hidden" name="_subject" value="Nová objednávka Taxi Martin!">
+
+<input type="hidden" name="_captcha" value="false">
+
+<label for="name">
+
+Jméno a příjmení:
+
+</label>
+
+<input
+
+type="text"
+
+id="name"
+
+name="Jmeno"
+
+placeholder="Vaše jméno"
+
+required
+
+>
+
+<label for="phone">
+
+Telefonní číslo:
+
+</label>
+
+<input
+
+type="tel"
+
+id="phone"
+
+name="Telefon"
+
+placeholder="Např. 777 020 281"
+
+required
+
+>
+
+<label for="from">
+
+Odkud (adresa / místo):
+
+</label>
+
+<input
+
+type="text"
+
+id="from"
+
+name="Odkud"
+
+placeholder="Ulice, město nebo např. Hlavní nádraží"
+
+required
+
+>
+
+<button
+
+type="button"
+
+class="btn-location"
+
+onclick="ziskatPolohu()">
+
+📍 Použít moji aktuální polohu
+
+</button>
+
+<div id="gpsStatus">
+
+Poloha zatím nebyla načtena.
+
+</div>
+
+<label for="to">
+
+Kam (cílová adresa):
+
+</label>
+
+<input
+
+type="text"
+
+id="to"
+
+name="Kam"
+
+placeholder="Cílová adresa"
+
+required
+
+>
+
+<label for="time">
+
+Čas přistavení:
+
+</label>
+
+<input
+
+type="text"
+
+id="time"
+
+name="Cas_pristaveni"
+
+placeholder="Co nejdříve / přesný čas"
+
+required
+
+>
+
+<button type="submit">
+
+Odeslat objednávku
+
+</button>
+
+</form>
+
+</div>
+
+<script>
+
+function ziskatPolohu() {
+
+const fromInput = document.getElementById("from");
+
+const gpsStatus = document.getElementById("gpsStatus");
+
+if (!navigator.geolocation) {
+
+alert("Tento telefon nebo prohlížeč nepodporuje zjištění polohy.");
+
+return;
+
+}
+
+gpsStatus.innerText = "📍 Zjišťuji vaši aktuální polohu...";
+
+navigator.geolocation.getCurrentPosition(
+
+function(position) {
+
+const latitude = position.coords.latitude;
+
+const longitude = position.coords.longitude;
+
+const mapa =
+
+"https://www.google.com/maps?q="
+
++ latitude
+
++ ","
+
++ longitude;
+
+fromInput.value = mapa;
+
+gpsStatus.innerText =
+
+"✅ Poloha načtena – můžete odeslat objednávku.";
+
+},
+
+function(error) {
+
+gpsStatus.innerText =
+
+"❌ Poloha nebyla načtena.";
+
+if (error.code === 1) {
+
+alert(
+
+"Přístup k poloze byl zamítnut. " +
+
+"Povolte prosím přístup k poloze pro tento web."
+
+);
+
+}
+
+else if (error.code === 2) {
+
+alert(
+
+"Poloha není momentálně dostupná. " +
+
+"Zkontrolujte GPS a zkuste to znovu."
+
+);
+
+}
+
+else {
+
+alert(
+
+"Poloha se nepodařila načíst. " +
+
+"Zkuste to prosím znovu."
+
+);
+
+}
+
+}
+
+);
+
+}
+
+</script>
+
 </body>
-</html>
+
+</html
