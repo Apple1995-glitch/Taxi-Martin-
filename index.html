@@ -451,11 +451,41 @@ alert(
 }
 
 </script> 
+<!-- Banner pro instalaci -->
+<div id="install-banner" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#28a745; color:white; padding:15px 20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999; text-align:center; font-family:sans-serif; width:80%; max-width:350px;">
+  <p style="margin:0 0 10px 0; font-weight:bold;">Nainstalujte si aplikaci Taxi Martin na plochu!</p>
+  <button id="install-button" style="background:white; color:#28a745; border:none; padding:8px 15px; font-weight:bold; border-radius:5px; cursor:pointer;">Stáhnout na plochu</button>
+</div>
+
 <script>
+  let deferredPrompt;
+  const installBanner = document.getElementById('install-banner');
+  const installButton = document.getElementById('install-button');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBanner.style.display = 'block';
+  });
+
+  installButton.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBanner.style.display = 'none';
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installBanner.style.display = 'none';
+  });
+
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
+    navigator.serviceWorker.register('/Taxi-Martin-/sw.js');
   }
 </script>
+
 
 
 </body>
