@@ -460,45 +460,68 @@ alert(
 </div>
 
 <script>
-  let deferredPrompt;
-  const banner = document.getElementById('universal-banner');
-  const btn = document.getElementById('universal-btn');
+  var deferredPrompt;
+  var banner = document.getElementById('universal-banner');
+  var btn = document.getElementById('universal-btn');
 
-  // Skryje banner, pokud už je web nainstalovaný na ploše
-  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  // Skryje banner, pokud už je web nainstalovaný
+  var isStandalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   if (isStandalone && banner) {
     banner.style.display = 'none';
   }
 
   // Zachycení automatické instalace pro Android Chrome
-  window.addEventListener('beforeinstallprompt', (e) => {
+  window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
   });
 
   // Logika po kliknutí na tlačítko "Stáhnout"
   if (btn) {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', function() {
+      var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+      var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
+      var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      // 1. Facebook / Instagram / Messenger prohlížeč
+      if (isFB) {
+        alert("Otevíráte web z aplikací Facebook nebo Instagram.\n\nPro uložení na plochu:\n1. Klikněte na 3 tečky (vpravo nahoře nebo dole)\n2. Zvolte 'Otevřít v prohlížeči' (Safari / Chrome)\n3. Následně přidejte aplikaci na plochu.");
+        return;
+      }
+
+      // 2. Novější Android (automatické stažení)
       if (deferredPrompt) {
         deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        if (outcome === 'accepted' && banner) banner.style.display = 'none';
-      } 
-      else if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-        alert("Pro uložení na iPhonu:\n\n1. Dole klepněte na tlačítko Sdílet ⎋\n2. Zvolte 'Přidat na plochu ➕'");
-      } 
-      else {
-        alert("Pro instalaci aplikace:\n\nKlepněte nahoře na 3 tečky (⋮) a zvolte 'Otevřít v aplikaci Chrome' nebo 'Přidat na plochu'.");
+        deferredPrompt.userChoice.then(function(choiceResult) {
+          if (choiceResult.outcome === 'accepted' && banner) {
+            banner.style.display = 'none';
+          }
+          deferredPrompt = null;
+        });
+        return;
       }
+
+      // 3. iPhone / iPad (Safari)
+      if (isiOS) {
+        alert("Pro uložení na iPhonu:\n\n1. Dole klepněte na tlačítko Sdílet ⎋\n2. Sjeďte níže a zvolte 'Přidat na plochu' ➕");
+        return;
+      }
+
+      // 4. Starší Androidy, čtečky a ostatní zařízení
+      alert("Pro uložení na plochu:\n\n1. Vpravo nahoře klepněte na tlačítko menu (3 tečky ⋮ nebo linky)\n2. Zvolte 'Přidat na plochu', 'Nainstalovat' nebo 'Uložit záložku'");
     });
   }
 
   // Registrace Service Workeru
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
+    navigator.serviceWorker.register('sw.js').catch(function(err) {
+      console.log('SW chyba:', err);
+    });
   }
 </script>
+</body>
+</html>
+
 
 
 
