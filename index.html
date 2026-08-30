@@ -453,40 +453,53 @@ alert(
 }
 
 </script> 
-<!-- Banner pro instalaci -->
-<div id="install-banner" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#28a745; color:white; padding:15px 20px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9999; text-align:center; font-family:sans-serif; width:80%; max-width:350px;">
-  <p style="margin:0 0 10px 0; font-weight:bold;">Nainstalujte si aplikaci Taxi Martin na plochu!</p>
-  <button id="install-button" style="background:white; color:#28a745; border:none; padding:8px 15px; font-weight:bold; border-radius:5px; cursor:pointer;">Stáhnout na plochu</button>
+<!-- Univerzální instalační banner -->
+<div id="universal-banner" style="position: fixed; bottom: 20px; left: 5%; right: 5%; background: #28a745; color: white; padding: 15px; border-radius: 12px; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 9999; display: flex; align-items: center; justify-content: space-between;">
+  <span style="font-size: 14px; font-weight: bold; padding-right: 10px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
+  <button id="universal-btn" style="background: white; color: #28a745; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap;">Stáhnout</button>
 </div>
 
 <script>
   let deferredPrompt;
-  const installBanner = document.getElementById('install-banner');
-  const installButton = document.getElementById('install-button');
+  const banner = document.getElementById('universal-banner');
+  const btn = document.getElementById('universal-btn');
 
+  // Skryje banner, pokud už je web nainstalovaný na ploše
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  if (isStandalone && banner) {
+    banner.style.display = 'none';
+  }
+
+  // Zachycení automatické instalace pro Android Chrome
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    installBanner.style.display = 'block';
   });
 
-  installButton.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      installBanner.style.display = 'none';
-    }
-  });
+  // Logika po kliknutí na tlačítko "Stáhnout"
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (outcome === 'accepted' && banner) banner.style.display = 'none';
+      } 
+      else if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        alert("Pro uložení na iPhonu:\n\n1. Dole klepněte na tlačítko Sdílet ⎋\n2. Zvolte 'Přidat na plochu ➕'");
+      } 
+      else {
+        alert("Pro instalaci aplikace:\n\nKlepněte nahoře na 3 tečky (⋮) a zvolte 'Otevřít v aplikaci Chrome' nebo 'Přidat na plochu'.");
+      }
+    });
+  }
 
-  window.addEventListener('appinstalled', () => {
-    installBanner.style.display = 'none';
-  });
-
+  // Registrace Service Workeru
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/Taxi-Martin-/sw.js');
+    navigator.serviceWorker.register('sw.js');
   }
 </script>
+
 
 
 
