@@ -1,0 +1,15 @@
+{
+  "name": "Taxi Martin",
+  "short_name": "Taxi Martin",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#28a745",
+  "icons": [
+    {
+      "src": "ikona-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
