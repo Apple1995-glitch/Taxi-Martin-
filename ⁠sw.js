@@ -1,3 +1,3 @@
-self.addEventListener('fetch', function(event) {
-  // Service Worker pro PWA
+self.addEventListener('fetch', (event) => {
+  event.respondWith(fetch(event.request));
 });
