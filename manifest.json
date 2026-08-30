@@ -2,20 +2,23 @@
   "id": "/Taxi-Martin-/",
   "name": "Taxi Martin",
   "short_name": "Taxi Martin",
-  "start_url": "./index.html",
+  "start_url": "/Taxi-Martin-/",
+  "scope": "/Taxi-Martin-/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#28a745",
   "icons": [
     {
-      "src": "IMG_2858.jpeg",
+      "src": "/Taxi-Martin-/IMG_2858.jpeg",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     },
     {
-      "src": "IMG_2858.jpeg",
+      "src": "/Taxi-Martin-/IMG_2858.jpeg",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }
