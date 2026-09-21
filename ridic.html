@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taxi Martin - Vysílání polohy</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 40px 20px; background: #121212; color: #fff; margin: 0; }
+    .card { background: #1e1e1e; border-radius: 16px; padding: 24px; max-width: 350px; margin: 20px auto; border: 1px solid #333; }
+    h1 { color: #ffcc00; font-size: 24px; margin-bottom: 20px; }
+    button { padding: 18px 24px; font-size: 18px; background: #ffcc00; color: #000; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3); }
+    button:active { opacity: 0.8; }
+    #status { margin-top: 20px; font-size: 15px; color: #bbb; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Taxi Martin - Řidič</h1>
+    <button onclick="startTracking()">Zapnout sledování auta</button>
+    <div id="status">Status: Vypnuto</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
+      authDomain: "taxi-f5229.firebaseapp.com",
+      databaseURL: "https://taxi-f5229-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "taxi-f5229",
+      storageBucket: "taxi-f5229.firebasestorage.app",
+      messagingSenderId: "159233844154",
+      appId: "1:159233844154:web:d876460899792fde5bf383"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function startTracking() {
+      if (!navigator.geolocation) {
+        alert("GPS není podporována ve vašem prohlížeči.");
+        return;
+      }
+
+      document.getElementById('status').innerText = "Status: Vyhledávám GPS...";
+
+      navigator.geolocation.watchPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        db.ref('driver/location').set({
+          lat: lat,
+          lng: lng,
+          timestamp: Date.now()
+        });
+
+        document.getElementById('status').innerText = `Poloha se úspěšně odesílá!\nLat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+      }, (err) => {
+        document.getElementById('status').innerText = "Chyba GPS: " + err.message;
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+      });
+    }
+  </script>
+</body>
+</html>
