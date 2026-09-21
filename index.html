@@ -518,7 +518,7 @@ alert(
       console.log('SW chyba:', err);
     });
   }
-</script>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -549,32 +549,29 @@ alert(
 
   let taxiMarker = null;
 
-  // Živé sledování z Firebase
+  // Živé sledování z Firebase - čteme přímo uzel z Traccaru
   db.ref('traccar').on('value', (snapshot) => {
     const data = snapshot.val();
     const etaElement = document.getElementById('eta-time');
 
     if (!data) {
-      if (etaElement) etaElement.innerText = "Nedostupné";
-      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
-      return;
-    }
-
-    // Kontrola čerstvosti dat (pokud mobil neposlal polohu déle než 3 minuty = vypnuto)
-    const lastUpdate = data.timestamp || 0;
-    const now = Date.now();
-    const minutesOld = (now - lastUpdate) / 1000 / 60;
-
-    if (minutesOld > 3) {
       if (etaElement) etaElement.innerText = "Mimo provoz";
       if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
       return;
     }
 
-    const lat = parseFloat(data.lat);
-    const lng = parseFloat(data.lon);
+    // Vytažení souřadnic a času
+    const lat = parseFloat(data.lat || (data.location && data.location.lat));
+    const lng = parseFloat(data.lon || data.lng || (data.location && data.location.lng));
+    const lastUpdate = data.timestamp || (data.location && data.location.timestamp) || Date.now();
 
-    if (isNaN(lat) || isNaN(lng)) return;
+    // Kontrola neaktivity (pokud mobil neposlal polohu déle než 3 minuty)
+    const minutesOld = (Date.now() - lastUpdate) / 1000 / 60;
+    if (minutesOld > 3 || isNaN(lat) || isNaN(lng)) {
+      if (etaElement) etaElement.innerText = "Mimo provoz";
+      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
+      return;
+    }
 
     // Aktualizace pozice auta na mapě
     if (!taxiMarker) {
@@ -583,13 +580,17 @@ alert(
       taxiMarker.setLatLng([lat, lng]);
     }
 
-    // Výpočet dojezdového času k zákazníkovi
+    // Přizpůsobení pohledu mapy
     if (typeof userLat !== 'undefined' && typeof userLng !== 'undefined') {
+      const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
+      map.fitBounds(bounds, { padding: [40, 40] });
       calculateETA(lat, lng, userLat, userLng);
+    } else {
+      map.setView([lat, lng], 14);
     }
   });
 
-  // Výpočet minut jízdy
+  // Výpočet minut jízdy k zákazníkovi
   async function calculateETA(driverLat, driverLng, destLat, destLng) {
     try {
       const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${destLng},${destLat}?overview=false`);
@@ -606,6 +607,7 @@ alert(
     }
   }
 </script>
+
 
 
 
