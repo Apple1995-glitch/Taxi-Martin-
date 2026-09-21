@@ -519,27 +519,12 @@ alert(
     });
   }
 </script>
-<!-- === ZAČÁTEK MAPY A SLEDOVÁNÍ TAXI === -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-<div style="background: #111111; color: #ffffff; padding: 20px; border-radius: 16px; margin: 25px auto; max-width: 500px; text-align: center; border: 2px solid #ffcc00; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-  <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px;">
-    <span style="font-size: 24px;">🚖</span>
-    <h3 style="margin: 0; color: #ffcc00; font-size: 20px;">Živé sledování vozu</h3>
-  </div>
-  
-  <div id="status" style="font-size: 15px; font-weight: bold; margin-bottom: 15px; color: #aaa; background: #222; padding: 8px 14px; border-radius: 20px; display: inline-block;">
-    Načítám polohu...
-  </div>
-
-  <div id="map" style="width: 100%; height: 320px; border-radius: 12px; border: 1px solid #333;"></div>
-</div>
-
 <script>
-  // Konfigurace Firebase
+  // Inicializace Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
     authDomain: "taxi-f5229.firebaseapp.com",
@@ -555,49 +540,73 @@ alert(
   }
   const db = firebase.database();
 
-  // Inicializace mapy
-  const map = L.map('map').setView([50.355, 15.921], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
-
-  // Vlastní ikona žlutého taxíku
+  // Ikona autíčka
   const taxiIcon = L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/1048/1048313.png',
-    iconSize: [42, 42],
-    iconAnchor: [21, 21]
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
+    iconSize: [35, 35],
+    iconAnchor: [17, 17]
   });
 
-  let driverMarker = null;
+  let taxiMarker = null;
 
-  // Sledování polohy z Firebase v reálném čase
-  db.ref('driver/location').on('value', (snapshot) => {
+  // Živé sledování z Firebase
+  db.ref('traccar').on('value', (snapshot) => {
     const data = snapshot.val();
-    const statusEl = document.getElementById('status');
+    const etaElement = document.getElementById('eta-time');
 
-    if (data && data.lat && data.lng) {
-      const { lat, lng } = data;
+    if (!data) {
+      if (etaElement) etaElement.innerText = "Nedostupné";
+      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
+      return;
+    }
 
-      if (!driverMarker) {
-        driverMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map);
-      } else {
-        driverMarker.setLatLng([lat, lng]);
-      }
-      
-      map.setView([lat, lng], 14);
-      statusEl.innerText = "🟢 Vůz je v provozu";
-      statusEl.style.color = "#00ff66";
-      statusEl.style.border = "1px solid #00ff66";
+    // Kontrola čerstvosti dat (pokud mobil neposlal polohu déle než 3 minuty = vypnuto)
+    const lastUpdate = data.timestamp || 0;
+    const now = Date.now();
+    const minutesOld = (now - lastUpdate) / 1000 / 60;
+
+    if (minutesOld > 3) {
+      if (etaElement) etaElement.innerText = "Mimo provoz";
+      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
+      return;
+    }
+
+    const lat = parseFloat(data.lat);
+    const lng = parseFloat(data.lon);
+
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    // Aktualizace pozice auta na mapě
+    if (!taxiMarker) {
+      taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
     } else {
-      statusEl.innerText = "🔴 Vůz je mimo provoz";
-      statusEl.style.color = "#ff4444";
-      statusEl.style.border = "1px solid #ff4444";
+      taxiMarker.setLatLng([lat, lng]);
+    }
+
+    // Výpočet dojezdového času k zákazníkovi
+    if (typeof userLat !== 'undefined' && typeof userLng !== 'undefined') {
+      calculateETA(lat, lng, userLat, userLng);
     }
   });
+
+  // Výpočet minut jízdy
+  async function calculateETA(driverLat, driverLng, destLat, destLng) {
+    try {
+      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${destLng},${destLat}?overview=false`);
+      const routeData = await res.json();
+      if (routeData.routes && routeData.routes[0]) {
+        const minutes = Math.ceil(routeData.routes[0].duration / 60);
+        const etaElement = document.getElementById('eta-time');
+        if (etaElement) {
+          etaElement.innerText = `${minutes} min`;
+        }
+      }
+    } catch (e) {
+      console.log("Chyba při výpočtu času:", e);
+    }
+  }
 </script>
-</body>
-</html>
-<!-- === KONEC MAPY A SLEDOVÁNÍ TAXI === -->
+
 
 
 
