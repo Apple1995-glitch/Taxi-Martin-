@@ -1,463 +1,186 @@
 <!DOCTYPE html>
-
 <html lang="cs">
-
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Taxi Martin</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="IMG_2858.jpeg">
 
-
-
 <style>
-
 body {
-
-font-family: Arial, sans-serif;
-
-background: #111;
-
-color: #fff;
-
-margin: 0;
-
-padding: 20px;
-
-text-align: center;
-
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
 }
-
 .wrap {
-
-max-width: 500px;
-
-margin: 0 auto;
-
-background: #222;
-
-padding: 20px;
-
-border-radius: 12px;
-
+  max-width: 500px;
+  margin: 0 auto;
+  background: #222;
+  padding: 20px;
+  border-radius: 12px;
 }
-
 h1 {
-
-color: #f5c518;
-
-margin-bottom: 5px;
-
+  color: #f5c518;
+  margin-bottom: 5px;
 }
-
 p {
-
-font-size: 1.1em;
-
-color: #ccc;
-
+  font-size: 1.1em;
+  color: #ccc;
 }
-
 .btn-call {
-
-display: block;
-
-background: #28a745;
-
-color: white;
-
-text-decoration: none;
-
-padding: 15px;
-
-font-size: 1.3em;
-
-font-weight: bold;
-
-border-radius: 8px;
-
-margin: 20px 0;
-
+  display: block;
+  background: #28a745;
+  color: white;
+  text-decoration: none;
+  padding: 15px;
+  font-size: 1.3em;
+  font-weight: bold;
+  border-radius: 8px;
+  margin: 20px 0;
 }
-
 .btn-call:hover {
-
-background: #218838;
-
+  background: #218838;
 }
-
 form {
-
-display: flex;
-
-flex-direction: column;
-
-gap: 12px;
-
-margin-top: 20px;
-
-text-align: left;
-
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  text-align: left;
 }
-
 label {
-
-font-size: 0.9em;
-
-color: #aaa;
-
+  font-size: 0.9em;
+  color: #aaa;
 }
-
-input,
-
-select {
-
-padding: 12px;
-
-border-radius: 6px;
-
-border: 1px solid #444;
-
-background: #333;
-
-color: #fff;
-
-font-size: 1em;
-
-width: 100%;
-
-box-sizing: border-box;
-
+input, select {
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #333;
+  color: #fff;
+  font-size: 1em;
+  width: 100%;
+  box-sizing: border-box;
 }
-
 button {
-
-background: #f5c518;
-
-color: #000;
-
-font-weight: bold;
-
-padding: 14px;
-
-border: none;
-
-border-radius: 6px;
-
-font-size: 1.1em;
-
-cursor: pointer;
-
-margin-top: 10px;
-
+  background: #f5c518;
+  color: #000;
+  font-weight: bold;
+  padding: 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1em;
+  cursor: pointer;
+  margin-top: 10px;
 }
-
 button:hover {
-
-background: #e0b000;
-
+  background: #e0b000;
 }
-
 .btn-location {
-
-background: #28a745;
-
-color: white;
-
-font-weight: bold;
-
-padding: 12px;
-
-border: none;
-
-border-radius: 6px;
-
-font-size: 1em;
-
-cursor: pointer;
-
-margin-top: 0;
-
+  background: #28a745;
+  color: white;
+  font-weight: bold;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1em;
+  cursor: pointer;
+  margin-top: 0;
 }
-
 .btn-location:hover {
-
-background: #218838;
-
+  background: #218838;
 }
-
 #gpsStatus {
-
-font-size: 0.9em;
-
-color: #aaa;
-
-text-align: center;
-
-margin-top: -5px;
-
+  font-size: 0.9em;
+  color: #aaa;
+  text-align: center;
+  margin-top: -5px;
 }
-
 </style>
-
 </head>
-
 <body>
 
 <div class="wrap">
+  <h1>🚖 Taxi Martin</h1>
+  <p>Rychlá a spolehlivá doprava</p>
+  <a href="tel:777020281" class="btn-call">
+    📞 Zavolat Taxi Martin<br>(777 020 281)
+  </a>
 
-<h1>🚖 Taxi Martin</h1>
+  <hr style="border: 0; border-top: 1px solid #444; margin: 25px 0;">
 
-<p>Rychlá a spolehlivá doprava</p>
+  <h3>Online Objednávka</h3>
 
-<a href="tel:777020281" class="btn-call">
+  <form action="https://formsubmit.co/jaroslavvachaonline@gmail.com" method="POST">
+    <input type="hidden" name="_subject" value="Nová objednávka Taxi Martin!">
+    <input type="hidden" name="_captcha" value="false">
 
-📞 Zavolat Taxi Martin<br>
+    <label for="name">Jméno a příjmení:</label>
+    <input type="text" id="name" name="Jmeno" placeholder="Vaše jméno" required>
 
-(777 020 281)
+    <label for="phone">Telefonní číslo:</label>
+    <input type="tel" id="phone" name="Telefon" placeholder="Např. 777 020 281" required>
 
-</a>
+    <label for="from">Odkud (adresa / místo):</label>
+    <input type="text" id="from" name="Odkud" placeholder="Ulice, město nebo např. Hlavní nádraží" required>
 
-<hr style="border: 0; border-top: 1px solid #444; margin: 25px 0;">
+    <button type="button" class="btn-location" onclick="ziskatPolohu()">
+      📍 Použít moji aktuální polohu
+    </button>
+    <div id="gpsStatus">Poloha zatím nebyla načtena.</div>
 
-<h3>Online Objednávka</h3>
+    <label for="to">Kam (cílová adresa):</label>
+    <input type="text" id="to" name="Kam" placeholder="Cílová adresa" required>
 
-<form action="https://formsubmit.co/jaroslavvachaonline@gmail.com" method="POST">
+    <label for="time">Čas přistavení:</label>
+    <input type="text" id="time" name="Cas_pristaveni" placeholder="Co nejdříve / přesný čas" required>
 
-<input type="hidden" name="_subject" value="Nová objednávka Taxi Martin!">
-
-<input type="hidden" name="_captcha" value="false">
-
-<label for="name">
-
-Jméno a příjmení:
-
-</label>
-
-<input
-
-type="text"
-
-id="name"
-
-name="Jmeno"
-
-placeholder="Vaše jméno"
-
-required
-
->
-
-<label for="phone">
-
-Telefonní číslo:
-
-</label>
-
-<input
-
-type="tel"
-
-id="phone"
-
-name="Telefon"
-
-placeholder="Např. 777 020 281"
-
-required
-
->
-
-<label for="from">
-
-Odkud (adresa / místo):
-
-</label>
-
-<input
-
-type="text"
-
-id="from"
-
-name="Odkud"
-
-placeholder="Ulice, město nebo např. Hlavní nádraží"
-
-required
-
->
-
-<button
-
-type="button"
-
-class="btn-location"
-
-onclick="ziskatPolohu()">
-
-📍 Použít moji aktuální polohu
-
-</button>
-
-<div id="gpsStatus">
-
-Poloha zatím nebyla načtena.
-
-</div>
-
-<label for="to">
-
-Kam (cílová adresa):
-
-</label>
-
-<input
-
-type="text"
-
-id="to"
-
-name="Kam"
-
-placeholder="Cílová adresa"
-
-required
-
->
-
-<label for="time">
-
-Čas přistavení:
-
-</label>
-
-<input
-
-type="text"
-
-id="time"
-
-name="Cas_pristaveni"
-
-placeholder="Co nejdříve / přesný čas"
-
-required
-
->
-
-<button type="submit">
-
-Odeslat objednávku
-
-</button>
-
-</form>
-
+    <button type="submit">Odeslat objednávku</button>
+  </form>
 </div>
 
 <script>
-
 function ziskatPolohu() {
+  const fromInput = document.getElementById("from");
+  const gpsStatus = document.getElementById("gpsStatus");
 
-const fromInput = document.getElementById("from");
+  if (!navigator.geolocation) {
+    alert("Tento telefon nebo prohlížeč nepodporuje zjištění polohy.");
+    return;
+  }
 
-const gpsStatus = document.getElementById("gpsStatus");
-
-if (!navigator.geolocation) {
-
-alert("Tento telefon nebo prohlížeč nepodporuje zjištění polohy.");
-
-return;
-
+  gpsStatus.innerText = "📍 Zjišťuji vaši aktuální polohu...";
+  navigator.geolocation.getCurrentPosition(
+    function(position) {
+      userLat = position.coords.latitude;
+      userLng = position.coords.longitude;
+      const mapa = "https://www.google.com/maps?q=" + userLat + "," + userLng;
+      fromInput.value = mapa;
+      gpsStatus.innerText = "✅ Poloha načtena – můžete odeslat objednávku.";
+    },
+    function(error) {
+      gpsStatus.innerText = "❌ Poloha nebyla načtena.";
+      if (error.code === 1) {
+        alert("Přístup k poloze byl zamítnut. Povolte prosím přístup k poloze pro tento web.");
+      } else if (error.code === 2) {
+        alert("Poloha není momentálně dostupná. Zkontrolujte GPS a zkuste to znovu.");
+      } else {
+        alert("Poloha se nepodařila načíst. Zkuste to prosím znovu.");
+      }
+    }
+  );
 }
+</script>
 
-gpsStatus.innerText = "📍 Zjišťuji vaši aktuální polohu...";
-
-navigator.geolocation.getCurrentPosition(
-
-function(position) {
-
-const latitude = position.coords.latitude;
-
-const longitude = position.coords.longitude;
-
-const mapa =
-
-"https://www.google.com/maps?q="
-
-+ latitude
-
-+ ","
-
-+ longitude;
-
-fromInput.value = mapa;
-
-gpsStatus.innerText =
-
-"✅ Poloha načtena – můžete odeslat objednávku.";
-
-},
-
-function(error) {
-
-gpsStatus.innerText =
-
-"❌ Poloha nebyla načtena.";
-
-if (error.code === 1) {
-
-alert(
-
-"Přístup k poloze byl zamítnut. " +
-
-"Povolte prosím přístup k poloze pro tento web."
-
-);
-
-}
-
-else if (error.code === 2) {
-
-alert(
-
-"Poloha není momentálně dostupná. " +
-
-"Zkontrolujte GPS a zkuste to znovu."
-
-);
-
-}
-
-else {
-
-alert(
-
-"Poloha se nepodařila načíst. " +
-
-"Zkuste to prosím znovu."
-
-);
-
-}
-
-}
-
-);
-
-}
-
-</script> 
-<!-- Banner s křížkem pro zavření -->
+<!-- Banner s tlačítkem Stáhnout -->
 <div id="universal-banner" style="position: fixed; bottom: 20px; left: 5%; right: 5%; background: #28a745; color: white; padding: 12px 15px; border-radius: 12px; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: space-between;">
   <span style="font-size: 13px; font-weight: bold; padding-right: 8px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
   <div style="display: flex; gap: 8px; align-items: center;">
-    <button id="universal-btn" style="background: white; color: #28a745; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap;">Stáhnout</button>
+    <button id="universal-btn" onclick="stahnoutAplikaci()" style="background: white; color: #28a745; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap;">Stáhnout</button>
     <button onclick="document.getElementById('universal-banner').style.display='none'" style="background: transparent; color: white; border: none; font-size: 18px; font-weight: bold; cursor: pointer; padding: 0 5px;">✕</button>
   </div>
 </div>
@@ -473,55 +196,48 @@ alert(
 </div>
 
 <script>
-  var deferredPrompt;
-  var banner = document.getElementById('universal-banner');
-  var btn = document.getElementById('universal-btn');
-
-  var isStandalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  if (isStandalone && banner) {
-    banner.style.display = 'none';
-  }
+  var deferredPrompt = null;
 
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
   });
 
-  if (btn) {
-    btn.addEventListener('click', function() {
-      var ua = navigator.userAgent || navigator.vendor || window.opera || '';
-      var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
-      var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function stahnoutAplikaci() {
+    var modal = document.getElementById('installModal');
+    var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+    var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
+    var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-      if (isFB) {
-        document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku";
-        document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari / Chrome'</b>.</li><li>Následně stiskněte tlačítko Stáhnout znovu.</li></ol>";
-        document.getElementById('installModal').style.display = 'flex';
-        return;
-      }
+    if (isFB) {
+      document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari / Chrome'</b>.</li></ol>";
+      if (modal) modal.style.display = 'flex';
+      return;
+    }
 
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function(choiceResult) {
-          if (choiceResult.outcome === 'accepted' && banner) {
-            banner.style.display = 'none';
-          }
-          deferredPrompt = null;
-        });
-        return;
-      }
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(choiceResult) {
+        if (choiceResult.outcome === 'accepted') {
+          var banner = document.getElementById('universal-banner');
+          if (banner) banner.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
+      return;
+    }
 
-      if (isiOS) {
-        document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
-        document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>Přidat na plochu ➕</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
-        document.getElementById('installModal').style.display = 'flex';
-        return;
-      }
+    if (isiOS) {
+      document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>Přidat na plochu ➕</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
+      if (modal) modal.style.display = 'flex';
+      return;
+    }
 
-      document.getElementById('modalTitle').innerText = "Přidat na plochu";
-      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
-      document.getElementById('installModal').style.display = 'flex';
-    });
+    document.getElementById('modalTitle').innerText = "Přidat na plochu";
+    document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
+    if (modal) modal.style.display = 'flex';
   }
 
   if ('serviceWorker' in navigator) {
@@ -529,8 +245,7 @@ alert(
       console.log('SW chyba:', err);
     });
   }
-
-⁠</script>
+</script>
 
 <!-- Načtení mapových knihoven a Firebase -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -542,7 +257,6 @@ alert(
   let userLat = null;
   let userLng = null;
 
-  // Vytvoření okná pro mapu na stránce
   let mapDiv = document.getElementById('map');
   if (!mapDiv) {
     const cardMap = document.createElement('div');
@@ -558,13 +272,11 @@ alert(
     wrap.appendChild(cardMap);
   }
 
-  // Inicializace mapy
   const map = L.map('map').setView([50.355, 15.921], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  // Inicializace Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
     authDomain: "taxi-f5229.firebaseapp.com",
@@ -642,15 +354,3 @@ alert(
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
