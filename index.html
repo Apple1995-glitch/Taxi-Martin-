@@ -300,7 +300,7 @@ function ziskatPolohu() {
 
   let taxiMarker = null;
 
-  db.ref('traccar').on('value', (snapshot) => {
+  db.ref('driver').on('value', (snapshot) => {
     const data = snapshot.val();
     const etaElement = document.getElementById('eta-time');
 
