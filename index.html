@@ -453,10 +453,23 @@ alert(
 }
 
 </script> 
-<!-- Univerzální instalační banner -->
-<div id="universal-banner" style="position: fixed; bottom: 20px; left: 5%; right: 5%; background: #28a745; color: white; padding: 15px; border-radius: 12px; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 9999; display: flex; align-items: center; justify-content: space-between;">
-  <span style="font-size: 14px; font-weight: bold; padding-right: 10px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
-  <button id="universal-btn" style="background: white; color: #28a745; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap;">Stáhnout</button>
+<!-- Banner s křížkem pro zavření -->
+<div id="universal-banner" style="position: fixed; bottom: 20px; left: 5%; right: 5%; background: #28a745; color: white; padding: 12px 15px; border-radius: 12px; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: space-between;">
+  <span style="font-size: 13px; font-weight: bold; padding-right: 8px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <button id="universal-btn" style="background: white; color: #28a745; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap;">Stáhnout</button>
+    <button onclick="document.getElementById('universal-banner').style.display='none'" style="background: transparent; color: white; border: none; font-size: 18px; font-weight: bold; cursor: pointer; padding: 0 5px;">✕</button>
+  </div>
+</div>
+
+<!-- Vyskakovací okno s návodem -->
+<div id="installModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: #222; border: 2px solid #f5c518; border-radius: 12px; padding: 20px; max-width: 400px; text-align: left; color: #fff; position: relative;">
+    <button onclick="document.getElementById('installModal').style.display='none'" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: #aaa; font-size: 24px; cursor: pointer;">✕</button>
+    <h3 style="margin-top:0; color:#f5c518;" id="modalTitle">Jak přidat aplikaci na plochu</h3>
+    <div id="modalBody" style="font-size:0.95em; line-height:1.5;"></div>
+    <button onclick="document.getElementById('installModal').style.display='none'" style="width:100%; margin-top:15px; background:#28a745; color:white; padding: 10px; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Rozumím</button>
+  </div>
 </div>
 
 <script>
@@ -464,32 +477,29 @@ alert(
   var banner = document.getElementById('universal-banner');
   var btn = document.getElementById('universal-btn');
 
-  // Skryje banner, pokud už je web nainstalovaný
   var isStandalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   if (isStandalone && banner) {
     banner.style.display = 'none';
   }
 
-  // Zachycení automatické instalace pro Android Chrome
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
   });
 
-  // Logika po kliknutí na tlačítko "Stáhnout"
   if (btn) {
     btn.addEventListener('click', function() {
       var ua = navigator.userAgent || navigator.vendor || window.opera || '';
       var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
       var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-      // 1. Facebook / Instagram / Messenger prohlížeč
       if (isFB) {
-        alert("Otevíráte web z aplikací Facebook nebo Instagram.\n\nPro uložení na plochu:\n1. Klikněte na 3 tečky (vpravo nahoře nebo dole)\n2. Zvolte 'Otevřít v prohlížeči' (Safari / Chrome)\n3. Následně přidejte aplikaci na plochu.");
+        document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku";
+        document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari / Chrome'</b>.</li><li>Následně stiskněte tlačítko Stáhnout znovu.</li></ol>";
+        document.getElementById('installModal').style.display = 'flex';
         return;
       }
 
-      // 2. Novější Android (automatické stažení)
       if (deferredPrompt) {
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then(function(choiceResult) {
@@ -501,23 +511,25 @@ alert(
         return;
       }
 
-      // 3. iPhone / iPad (Safari)
       if (isiOS) {
-        alert("Pro uložení na iPhonu:\n\n1. Dole klepněte na tlačítko Sdílet ⎋\n2. Sjeďte níže a zvolte 'Přidat na plochu' ➕");
+        document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
+        document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>Přidat na plochu ➕</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
+        document.getElementById('installModal').style.display = 'flex';
         return;
       }
 
-      // 4. Starší Androidy, čtečky a ostatní zařízení
-      alert("Pro uložení na plochu:\n\n1. Vpravo nahoře klepněte na tlačítko menu (3 tečky ⋮ nebo linky)\n2. Zvolte 'Přidat na plochu', 'Nainstalovat' nebo 'Uložit záložku'");
+      document.getElementById('modalTitle').innerText = "Přidat na plochu";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
+      document.getElementById('installModal').style.display = 'flex';
     });
   }
 
-  // Registrace Service Workeru
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function(err) {
       console.log('SW chyba:', err);
     });
   }
+
 ⁠</script>⁠
 <!-- Načtení mapových knihoven a Firebase -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
