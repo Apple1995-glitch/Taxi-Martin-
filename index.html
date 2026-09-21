@@ -519,26 +519,27 @@ alert(
     });
   }
 </script>
-<!-- Leaflet CSS a JS pro mapu -->
+<!-- === ZAČÁTEK MAPY A SLEDOVÁNÍ TAXI === -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-<!-- Sekce s mapou a časem příjezdu -->
-<div style="background: #1e1e1e; color: #fff; padding: 20px; border-radius: 12px; margin: 20px 0; font-family: sans-serif; text-align: center;">
-  <h3 style="margin: 0 0 10px 0; color: #ffcc00;">Živé sledování příjezdu</h3>
-  <div style="font-size: 22px; font-weight: bold;">
-    Čas příjezdu: <span id="eta-time" style="color: #ffcc00;">Čekám na vozidlo...</span>
+<div style="background: #111111; color: #ffffff; padding: 20px; border-radius: 16px; margin: 25px auto; max-width: 500px; text-align: center; border: 2px solid #ffcc00; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+  <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px;">
+    <span style="font-size: 24px;">🚖</span>
+    <h3 style="margin: 0; color: #ffcc00; font-size: 20px;">Živé sledování vozu</h3>
   </div>
+  
+  <div id="status" style="font-size: 15px; font-weight: bold; margin-bottom: 15px; color: #aaa; background: #222; padding: 8px 14px; border-radius: 20px; display: inline-block;">
+    Načítám polohu...
+  </div>
+
+  <div id="map" style="width: 100%; height: 320px; border-radius: 12px; border: 1px solid #333;"></div>
 </div>
 
-<div id="map" style="width: 100%; height: 350px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 20px;"></div>
-
 <script>
-  // Firebase Konfigurace
+  // Konfigurace Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
     authDomain: "taxi-f5229.firebaseapp.com",
@@ -554,63 +555,50 @@ alert(
   }
   const db = firebase.database();
 
-  // Inicializace mapy (Jaroměř)
+  // Inicializace mapy
   const map = L.map('map').setView([50.355, 15.921], 13);
-
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  // Ikona taxíku
+  // Vlastní ikona žlutého taxíku
   const taxiIcon = L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20]
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/1048/1048313.png',
+    iconSize: [42, 42],
+    iconAnchor: [21, 21]
   });
 
   let driverMarker = null;
 
-  // Souřadnice zákazníka
-  const customerLat = 50.355;
-  const customerLng = 15.921;
-  L.marker([customerLat, customerLng]).addTo(map).bindPopup("Místo vyzvednutí").openPopup();
-
-  // Poslech živé polohy řidiče z Firebase
+  // Sledování polohy z Firebase v reálném čase
   db.ref('driver/location').on('value', (snapshot) => {
     const data = snapshot.val();
-    if (!data) return;
+    const statusEl = document.getElementById('status');
 
-    const { lat, lng } = data;
+    if (data && data.lat && data.lng) {
+      const { lat, lng } = data;
 
-    if (!driverMarker) {
-      driverMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map);
-    } else {
-      driverMarker.setLatLng([lat, lng]);
-    }
-
-    const bounds = L.latLngBounds([[lat, lng], [customerLat, customerLng]]);
-    map.fitBounds(bounds, { padding: [40, 40] });
-
-    calculateETA(lat, lng, customerLat, customerLng);
-  });
-
-  // Výpočet dojezdu v minutách
-  async function calculateETA(driverLat, driverLng, destLat, destLng) {
-    try {
-      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${destLng},${destLat}?overview=false`);
-      const routeData = await res.json();
-      if (routeData.routes && routeData.routes[0]) {
-        const minutes = Math.ceil(routeData.routes[0].duration / 60);
-        document.getElementById('eta-time').innerText = `${minutes} min`;
+      if (!driverMarker) {
+        driverMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map);
+      } else {
+        driverMarker.setLatLng([lat, lng]);
       }
-    } catch (e) {
-      document.getElementById('eta-time').innerText = "Nelze spočítat";
+      
+      map.setView([lat, lng], 14);
+      statusEl.innerText = "🟢 Vůz je v provozu";
+      statusEl.style.color = "#00ff66";
+      statusEl.style.border = "1px solid #00ff66";
+    } else {
+      statusEl.innerText = "🔴 Vůz je mimo provoz";
+      statusEl.style.color = "#ff4444";
+      statusEl.style.border = "1px solid #ff4444";
     }
-  }
+  });
 </script>
-
 </body>
 </html>
+<!-- === KONEC MAPY A SLEDOVÁNÍ TAXI === -->
+
 
 
 
