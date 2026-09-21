@@ -519,6 +519,96 @@ alert(
     });
   }
 </script>
+<!-- Leaflet CSS a JS pro mapu -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+<!-- Sekce s mapou a časem příjezdu -->
+<div style="background: #1e1e1e; color: #fff; padding: 20px; border-radius: 12px; margin: 20px 0; font-family: sans-serif; text-align: center;">
+  <h3 style="margin: 0 0 10px 0; color: #ffcc00;">Živé sledování příjezdu</h3>
+  <div style="font-size: 22px; font-weight: bold;">
+    Čas příjezdu: <span id="eta-time" style="color: #ffcc00;">Čekám na vozidlo...</span>
+  </div>
+</div>
+
+<div id="map" style="width: 100%; height: 350px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 20px;"></div>
+
+<script>
+  // Firebase Konfigurace
+  const firebaseConfig = {
+    apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
+    authDomain: "taxi-f5229.firebaseapp.com",
+    databaseURL: "https://taxi-f5229-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "taxi-f5229",
+    storageBucket: "taxi-f5229.firebasestorage.app",
+    messagingSenderId: "159233844154",
+    appId: "1:159233844154:web:d876460899792fde5bf383"
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const db = firebase.database();
+
+  // Inicializace mapy (Jaroměř)
+  const map = L.map('map').setView([50.355, 15.921], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  // Ikona taxíku
+  const taxiIcon = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
+  });
+
+  let driverMarker = null;
+
+  // Souřadnice zákazníka
+  const customerLat = 50.355;
+  const customerLng = 15.921;
+  L.marker([customerLat, customerLng]).addTo(map).bindPopup("Místo vyzvednutí").openPopup();
+
+  // Poslech živé polohy řidiče z Firebase
+  db.ref('driver/location').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    const { lat, lng } = data;
+
+    if (!driverMarker) {
+      driverMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map);
+    } else {
+      driverMarker.setLatLng([lat, lng]);
+    }
+
+    const bounds = L.latLngBounds([[lat, lng], [customerLat, customerLng]]);
+    map.fitBounds(bounds, { padding: [40, 40] });
+
+    calculateETA(lat, lng, customerLat, customerLng);
+  });
+
+  // Výpočet dojezdu v minutách
+  async function calculateETA(driverLat, driverLng, destLat, destLng) {
+    try {
+      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${destLng},${destLat}?overview=false`);
+      const routeData = await res.json();
+      if (routeData.routes && routeData.routes[0]) {
+        const minutes = Math.ceil(routeData.routes[0].duration / 60);
+        document.getElementById('eta-time').innerText = `${minutes} min`;
+      }
+    } catch (e) {
+      document.getElementById('eta-time').innerText = "Nelze spočítat";
+    }
+  }
+</script>
+
 </body>
 </html>
 
