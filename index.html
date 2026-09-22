@@ -100,6 +100,12 @@ button:hover {
   text-align: center;
   margin-top: -5px;
 }
+.car-marker {
+  font-size: 36px;
+  text-align: center;
+  line-height: 1;
+  filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.5));
+}
 </style>
 </head>
 <body>
@@ -292,20 +298,18 @@ function ziskatPolohu() {
   }
   const db = firebase.database();
 
-  // MODERNÍ DYNAMICKÁ IKONA TAXÍKU Z PTAČÍ PERSPEKTIVY
-  const taxiSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="50" height="50"><path fill="%23f5c518" stroke="%23000000" stroke-width="12" d="M380 48H132c-35 0-60 28-60 62v292c0 34 25 62 60 62h248c35 0 60-28 60-62V110c0-34-25-62-60-62z"/><path fill="%23222222" d="M128 120h256v80H128zm30 180h196v60H158z"/><path fill="%23ffffff" opacity="0.3" d="M140 130h232v25H140z"/><circle cx="160" cy="420" r="22" fill="%23f5c518"/><circle cx="352" cy="420" r="22" fill="%23f5c518"/><rect x="206" y="220" width="100" height="30" rx="6" fill="%23000000"/><text x="256" y="241" fill="%23f5c518" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">TAXI</text></svg>`;
-
-  const taxiIcon = L.icon({
-    iconUrl: taxiSvg,
-    iconSize: [42, 42],
-    iconAnchor: [21, 21],
+  // IKONA AUTA 🚗
+  const taxiIcon = L.divIcon({
+    html: '<div class="car-marker">🚗</div>',
+    className: '',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
     popupAnchor: [0, -20]
   });
 
   let taxiMarker = null;
   let animationInterval = null;
 
-  // Funkce pro plynulou animaci autíčka mezi starou a novou polohou
   function animateMarker(marker, startPos, endPos, duration) {
     if (animationInterval) clearInterval(animationInterval);
     const startTime = performance.now();
@@ -319,7 +323,6 @@ function ziskatPolohu() {
     }, 20);
   }
 
-  // Sledování uzlu 'driver'
   db.ref('driver').on('value', (snapshot) => {
     let data = snapshot.val();
     const etaElement = document.getElementById('eta-time');
