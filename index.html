@@ -292,13 +292,13 @@ function ziskatPolohu() {
   }
   const db = firebase.database();
 
-  // VLOŽENÁ ŽLUTÁ SVG IKONA TAXÍKU (Nezávislá na externích serverech)
-  const taxiSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="45" height="45"><path fill="%23f5c518" stroke="%23000" stroke-width="1" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM7.5 17c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>`;
+  // MODERNÍ DYNAMICKÁ IKONA TAXÍKU Z PTAČÍ PERSPEKTIVY
+  const taxiSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="50" height="50"><path fill="%23f5c518" stroke="%23000000" stroke-width="12" d="M380 48H132c-35 0-60 28-60 62v292c0 34 25 62 60 62h248c35 0 60-28 60-62V110c0-34-25-62-60-62z"/><path fill="%23222222" d="M128 120h256v80H128zm30 180h196v60H158z"/><path fill="%23ffffff" opacity="0.3" d="M140 130h232v25H140z"/><circle cx="160" cy="420" r="22" fill="%23f5c518"/><circle cx="352" cy="420" r="22" fill="%23f5c518"/><rect x="206" y="220" width="100" height="30" rx="6" fill="%23000000"/><text x="256" y="241" fill="%23f5c518" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">TAXI</text></svg>`;
 
   const taxiIcon = L.icon({
     iconUrl: taxiSvg,
-    iconSize: [45, 45],
-    iconAnchor: [22, 22],
+    iconSize: [42, 42],
+    iconAnchor: [21, 21],
     popupAnchor: [0, -20]
   });
 
