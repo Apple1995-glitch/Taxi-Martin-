@@ -148,7 +148,7 @@ button:hover {
     <button type="submit">Odeslat objednávku</button>
   </form>
 
-  <!-- Karta s informacemi o času příjezdu bez žlutého rámečku -->
+  <!-- Karta s informacemi o času příjezdu -->
   <div style="background: #2a2a2a; padding: 20px; border-radius: 14px; margin-top: 25px; text-align: center;">
     <h3 style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.3em;">Živé sledování příjezdu</h3>
     <div style="font-size: 1.3em; font-weight: bold;">
@@ -156,7 +156,7 @@ button:hover {
     </div>
   </div>
 
-  <!-- Větší mapa bez rámečku -->
+  <!-- Mapa -->
   <div id="map" style="width: 100%; height: 350px; border-radius: 14px; margin-top: 15px; background: #333;"></div>
 </div>
 
@@ -306,7 +306,6 @@ function ziskatPolohu() {
   let taxiMarker = null;
   let animationInterval = null;
 
-  // Funkce pro plynulý posun ikony autíčka na mapě
   function animateMarker(marker, startPos, endPos, duration) {
     if (animationInterval) clearInterval(animationInterval);
     const startTime = performance.now();
@@ -323,22 +322,37 @@ function ziskatPolohu() {
       if (progress >= 1) {
         clearInterval(animationInterval);
       }
-    }, 16); // ~60 FPS pro plynulý pohyb
+    }, 16);
   }
 
-  // Pomocná funkce pro vyhledání souřadnic ve struktuře databáze
-  function extractLocationData(obj) {
-    if (!obj) return null;
-    if (obj.lat !== undefined || obj.latitude !== undefined) return obj;
-    
-    if (typeof obj === 'object') {
-      const keys = Object.keys(obj);
-      for (let i = keys.length - 1; i >= 0; i--) {
-        const res = extractLocationData(obj[keys[i]]);
-        if (res) return res;
+  // Funkce, která spolehlivě projde celou databázi a najde NEJNOVĚJŠÍ zprávu podle času
+  function getLatestLocation(rootObj) {
+    let latest = null;
+
+    function walk(node) {
+      if (!node || typeof node !== 'object') return;
+
+      const lat = parseFloat(node.lat || node.latitude);
+      const lng = parseFloat(node.lon || node.lng || node.longitude);
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        // Časové razítko (OwnTracks používá 'tst' v sekundách)
+        let time = node.tst ? (node.tst * 1000) : (node.created_at || 0);
+        
+        if (!latest || time > latest.time) {
+          latest = { lat, lng, time };
+        }
+      }
+
+      for (const key in node) {
+        if (typeof node[key] === 'object') {
+          walk(node[key]);
+        }
       }
     }
-    return null;
+
+    walk(rootObj);
+    return latest;
   }
 
   db.ref().on('value', (snapshot) => {
@@ -347,28 +361,23 @@ function ziskatPolohu() {
 
     if (!rootData) return;
 
-    const data = extractLocationData(rootData);
-    if (!data) return;
+    const latestLoc = getLatestLocation(rootData);
+    if (!latestLoc) return;
 
-    const lat = parseFloat(data.lat || data.latitude);
-    const lng = parseFloat(data.lon || data.lng || data.longitude);
-
-    if (isNaN(lat) || isNaN(lng)) return;
-
-    const newPos = { lat, lng };
+    const newPos = { lat: latestLoc.lat, lng: latestLoc.lng };
 
     if (!taxiMarker) {
-      taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
-      map.setView([lat, lng], 15);
+      taxiMarker = L.marker([latestLoc.lat, latestLoc.lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
+      map.setView([latestLoc.lat, latestLoc.lng], 15);
     } else {
       const startPos = taxiMarker.getLatLng();
       animateMarker(taxiMarker, startPos, newPos, 2000);
     }
 
     if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
-      const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
+      const bounds = L.latLngBounds([[latestLoc.lat, latestLoc.lng], [userLat, userLng]]);
       map.fitBounds(bounds, { padding: [40, 40] });
-      calculateETA(lat, lng, userLat, userLng);
+      calculateETA(latestLoc.lat, latestLoc.lng, userLat, userLng);
     } else {
       if (etaElement) etaElement.innerText = "V provozu 🟢";
     }
