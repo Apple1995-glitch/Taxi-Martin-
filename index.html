@@ -101,10 +101,10 @@ button:hover {
   margin-top: -5px;
 }
 .car-marker {
-  font-size: 36px;
+  font-size: 38px;
   text-align: center;
   line-height: 1;
-  filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.5));
+  filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));
 }
 </style>
 </head>
@@ -298,9 +298,9 @@ function ziskatPolohu() {
   }
   const db = firebase.database();
 
-  // IKONA AUTA 🚗
+  // ŽLUTÝ TAXÍK 🚕
   const taxiIcon = L.divIcon({
-    html: '<div class="car-marker">🚗</div>',
+    html: '<div class="car-marker">🚕</div>',
     className: '',
     iconSize: [40, 40],
     iconAnchor: [20, 20],
