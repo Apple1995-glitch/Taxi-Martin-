@@ -306,42 +306,54 @@ function ziskatPolohu() {
   let taxiMarker = null;
   let animationInterval = null;
 
+  // Funkce pro plynulý posun ikony autíčka na mapě
   function animateMarker(marker, startPos, endPos, duration) {
     if (animationInterval) clearInterval(animationInterval);
     const startTime = performance.now();
+    
     animationInterval = setInterval(() => {
       const elapsed = performance.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
+      
       const currentLat = startPos.lat + (endPos.lat - startPos.lat) * progress;
       const currentLng = startPos.lng + (endPos.lng - startPos.lng) * progress;
+      
       marker.setLatLng([currentLat, currentLng]);
-      if (progress >= 1) clearInterval(animationInterval);
-    }, 20);
+      
+      if (progress >= 1) {
+        clearInterval(animationInterval);
+      }
+    }, 16); // ~60 FPS pro plynulý pohyb
   }
 
-  db.ref('driver').on('value', (snapshot) => {
-    let data = snapshot.val();
-    const etaElement = document.getElementById('eta-time');
-
-    if (!data) return;
-
-    if (data.lat === undefined && typeof data === 'object') {
-      const keys = Object.keys(data);
-      if (keys.length > 0) {
-        data = data[keys[keys.length - 1]];
+  // Pomocná funkce pro vyhledání souřadnic ve struktuře databáze
+  function extractLocationData(obj) {
+    if (!obj) return null;
+    if (obj.lat !== undefined || obj.latitude !== undefined) return obj;
+    
+    if (typeof obj === 'object') {
+      const keys = Object.keys(obj);
+      for (let i = keys.length - 1; i >= 0; i--) {
+        const res = extractLocationData(obj[keys[i]]);
+        if (res) return res;
       }
     }
+    return null;
+  }
+
+  db.ref().on('value', (snapshot) => {
+    const rootData = snapshot.val();
+    const etaElement = document.getElementById('eta-time');
+
+    if (!rootData) return;
+
+    const data = extractLocationData(rootData);
+    if (!data) return;
 
     const lat = parseFloat(data.lat || data.latitude);
     const lng = parseFloat(data.lon || data.lng || data.longitude);
-    const lastUpdate = (data.tst ? data.tst * 1000 : Date.now());
 
-    const minutesOld = (Date.now() - lastUpdate) / 1000 / 60;
-    if (minutesOld > 30 || isNaN(lat) || isNaN(lng)) {
-      if (etaElement) etaElement.innerText = "Mimo provoz";
-      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
-      return;
-    }
+    if (isNaN(lat) || isNaN(lng)) return;
 
     const newPos = { lat, lng };
 
@@ -350,7 +362,7 @@ function ziskatPolohu() {
       map.setView([lat, lng], 15);
     } else {
       const startPos = taxiMarker.getLatLng();
-      animateMarker(taxiMarker, startPos, newPos, 3000);
+      animateMarker(taxiMarker, startPos, newPos, 2000);
     }
 
     if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
@@ -358,7 +370,7 @@ function ziskatPolohu() {
       map.fitBounds(bounds, { padding: [40, 40] });
       calculateETA(lat, lng, userLat, userLng);
     } else {
-      if (etaElement) etaElement.innerText = "Aktivní";
+      if (etaElement) etaElement.innerText = "V provozu 🟢";
     }
   });
 
