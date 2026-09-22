@@ -172,6 +172,14 @@ function ziskatPolohu() {
       const mapa = "https://www.google.com/maps?q=" + userLat + "," + userLng;
       fromInput.value = mapa;
       gpsStatus.innerText = "✅ Poloha načtena – můžete odeslat objednávku.";
+      
+      if (typeof map !== 'undefined') {
+        if (typeof userMarker !== 'undefined' && userMarker) {
+          userMarker.setLatLng([userLat, userLng]);
+        } else if (typeof L !== 'undefined') {
+          window.userMarker = L.marker([userLat, userLng]).addTo(map).bindPopup("Vaše poloha");
+        }
+      }
     },
     function(error) {
       gpsStatus.innerText = "❌ Poloha nebyla načtena.";
@@ -267,6 +275,7 @@ function ziskatPolohu() {
 <script>
   let userLat = null;
   let userLng = null;
+  let userMarker = null;
 
   const map = L.map('map').setView([50.355, 15.921], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -290,47 +299,76 @@ function ziskatPolohu() {
 
   const taxiIcon = L.icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
-    iconSize: [35, 35],
-    iconAnchor: [17, 17]
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
   });
 
   let taxiMarker = null;
+  let animationInterval = null;
 
-  db.ref('driver').on('value', (snapshot) => {
-    const data = snapshot.val();
-    const etaElement = document.getElementById('eta-time');
+  function animateMarker(marker, startPos, endPos, duration) {
+    if (animationInterval) clearInterval(animationInterval);
+    
+    const startTime = performance.now();
+    
+    animationInterval = setInterval(() => {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      const currentLat = startPos.lat + (endPos.lat - startPos.lat) * progress;
+      const currentLng = startPos.lng + (endPos.lng - startPos.lng) * progress;
+      
+      marker.setLatLng([currentLat, currentLng]);
+      
+      if (progress >= 1) {
+        clearInterval(animationInterval);
+      }
+    }, 20);
+  }
 
-    if (!data) {
-      if (etaElement) etaElement.innerText = "Mimo provoz";
-      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
-      return;
-    }
+  function listenToDriverLocation(path) {
+    db.ref(path).on('value', (snapshot) => {
+      const data = snapshot.val();
+      const etaElement = document.getElementById('eta-time');
 
-    const lat = parseFloat(data.lat || (data.location && data.location.lat));
-    const lng = parseFloat(data.lon || data.lng || (data.location && data.location.lng));
-    const rawTime = data.tst ? (data.tst * 1000) : (data.timestamp || (data.location && data.location.timestamp) || Date.now());
+      if (!data) {
+        if (etaElement) etaElement.innerText = "Mimo provoz";
+        if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
+        return;
+      }
 
-    const minutesOld = (Date.now() - rawTime) / 1000 / 60;
-    if (minutesOld > 15 || isNaN(lat) || isNaN(lng)) {
-      if (etaElement) etaElement.innerText = "Mimo provoz";
-      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
-      return;
-    }
+      const lat = parseFloat(data.lat || (data.location && data.location.lat));
+      const lng = parseFloat(data.lon || data.lng || (data.location && data.location.lng));
+      const rawTime = data.tst ? (data.tst * 1000) : (data.timestamp || (data.location && data.location.timestamp) || Date.now());
 
-    if (!taxiMarker) {
-      taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
-    } else {
-      taxiMarker.setLatLng([lat, lng]);
-    }
+      const minutesOld = (Date.now() - rawTime) / 1000 / 60;
+      if (minutesOld > 15 || isNaN(lat) || isNaN(lng)) {
+        if (etaElement) etaElement.innerText = "Mimo provoz";
+        if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
+        return;
+      }
 
-    if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
-      const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
-      map.fitBounds(bounds, { padding: [40, 40] });
-      calculateETA(lat, lng, userLat, userLng);
-    } else {
-      map.setView([lat, lng], 14);
-    }
-  });
+      const newPos = { lat: lat, lng: lng };
+
+      if (!taxiMarker) {
+        taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
+      } else {
+        const startPos = taxiMarker.getLatLng();
+        animateMarker(taxiMarker, startPos, newPos, 3000);
+      }
+
+      if (userLat !== null && userLng !== null) {
+        const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
+        map.fitBounds(bounds, { padding: [50, 50] });
+        calculateETA(lat, lng, userLat, userLng);
+      } else {
+        map.setView([lat, lng], 14);
+      }
+    });
+  }
+
+  listenToDriverLocation('driver');
+  listenToDriverLocation('traccar');
 
   async function calculateETA(driverLat, driverLng, destLat, destLng) {
     try {
@@ -340,7 +378,11 @@ function ziskatPolohu() {
         const minutes = Math.ceil(routeData.routes[0].duration / 60);
         const etaElement = document.getElementById('eta-time');
         if (etaElement) {
-          etaElement.innerText = `${minutes} min`;
+          if (minutes <= 1) {
+            etaElement.innerText = "Příjezd! (Méně než minutu)";
+          } else {
+            etaElement.innerText = `${minutes} min`;
+          }
         }
       }
     } catch (e) {
