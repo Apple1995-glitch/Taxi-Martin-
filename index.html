@@ -141,20 +141,12 @@ button:hover {
 
     <button type="submit">Odeslat objednávku</button>
   </form>
-
-  <!-- Karta s časem příjezdu -->
-  <div style="background: #222; padding: 15px; border-radius: 12px; margin-top: 25px;">
-    <h3 style="margin: 0 0 5px 0; color: #f5c518; text-align: center;">Živé sledování příjezdu</h3>
-    <div style="font-size: 1.3em; font-weight: bold; margin-bottom: 5px; text-align: center;">
-      Čas příjezdu: <span id="eta-time" style="color: #f5c518;">Mimo provoz</span>
-    </div>
-  </div>
-
-  <!-- Samostatná velká mapa s zaoblením -->
-  <div id="map" style="width: 100%; height: 350px; border-radius: 12px; margin-top: 15px; background: #333;"></div>
 </div>
 
 <script>
+let userLat = null;
+let userLng = null;
+
 function ziskatPolohu() {
   const fromInput = document.getElementById("from");
   const gpsStatus = document.getElementById("gpsStatus");
@@ -172,39 +164,24 @@ function ziskatPolohu() {
       const mapa = "https://www.google.com/maps?q=" + userLat + "," + userLng;
       fromInput.value = mapa;
       gpsStatus.innerText = "✅ Poloha načtena – můžete odeslat objednávku.";
-      
-      if (typeof map !== 'undefined') {
-        if (typeof userMarker !== 'undefined' && userMarker) {
-          userMarker.setLatLng([userLat, userLng]);
-        } else if (typeof L !== 'undefined') {
-          window.userMarker = L.marker([userLat, userLng]).addTo(map).bindPopup("Vaše poloha");
-        }
-      }
     },
     function(error) {
       gpsStatus.innerText = "❌ Poloha nebyla načtena.";
-      if (error.code === 1) {
-        alert("Přístup k poloze byl zamítnut. Povolte prosím přístup k poloze pro tento web.");
-      } else if (error.code === 2) {
-        alert("Poloha není momentálně dostupná. Zkontrolujte GPS a zkuste to znovu.");
-      } else {
-        alert("Poloha se nepodařila načíst. Zkuste to prosím znovu.");
-      }
+      alert("Nepodařilo se načíst polohu.");
     }
   );
 }
 </script>
 
-<!-- Banner s tlačítkem Stáhnout -->
+<!-- Banner pro instalaci aplikace -->
 <div id="universal-banner" style="position: fixed; bottom: 20px; left: 5%; right: 5%; background: #28a745; color: white; padding: 12px 15px; border-radius: 12px; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: space-between;">
   <span style="font-size: 13px; font-weight: bold; padding-right: 8px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
   <div style="display: flex; gap: 8px; align-items: center;">
-    <button id="universal-btn" onclick="stahnoutAplikaci()" style="background: white; color: #28a745; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap;">Stáhnout</button>
+    <button id="universal-btn" style="background: white; color: #28a745; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap;">Stáhnout</button>
     <button onclick="document.getElementById('universal-banner').style.display='none'" style="background: transparent; color: white; border: none; font-size: 18px; font-weight: bold; cursor: pointer; padding: 0 5px;">✕</button>
   </div>
 </div>
 
-<!-- Vyskakovací okno s návodem -->
 <div id="installModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
   <div style="background: #222; border: 2px solid #f5c518; border-radius: 12px; padding: 20px; max-width: 400px; text-align: left; color: #fff; position: relative;">
     <button onclick="document.getElementById('installModal').style.display='none'" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: #aaa; font-size: 24px; cursor: pointer;">✕</button>
@@ -215,48 +192,55 @@ function ziskatPolohu() {
 </div>
 
 <script>
-  var deferredPrompt = null;
+  var deferredPrompt;
+  var banner = document.getElementById('universal-banner');
+  var btn = document.getElementById('universal-btn');
+
+  var isStandalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (isStandalone && banner) {
+    banner.style.display = 'none';
+  }
 
   window.addEventListener('beforeinstallprompt', function(e) {
     e.preventDefault();
     deferredPrompt = e;
   });
 
-  function stahnoutAplikaci() {
-    var modal = document.getElementById('installModal');
-    var ua = navigator.userAgent || navigator.vendor || window.opera || '';
-    var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
-    var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (btn) {
+    btn.addEventListener('click', function() {
+      var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+      var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
+      var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    if (isFB) {
-      document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku";
-      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari / Chrome'</b>.</li></ol>";
-      if (modal) modal.style.display = 'flex';
-      return;
-    }
+      if (isFB) {
+        document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku";
+        document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari / Chrome'</b>.</li><li>Následně stiskněte tlačítko Stáhnout znovu.</li></ol>";
+        document.getElementById('installModal').style.display = 'flex';
+        return;
+      }
 
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function(choiceResult) {
-        if (choiceResult.outcome === 'accepted') {
-          var banner = document.getElementById('universal-banner');
-          if (banner) banner.style.display = 'none';
-        }
-        deferredPrompt = null;
-      });
-      return;
-    }
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(choiceResult) {
+          if (choiceResult.outcome === 'accepted' && banner) {
+            banner.style.display = 'none';
+          }
+          deferredPrompt = null;
+        });
+        return;
+      }
 
-    if (isiOS) {
-      document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
-      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>Přidat na plochu ➕</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
-      if (modal) modal.style.display = 'flex';
-      return;
-    }
+      if (isiOS) {
+        document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
+        document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>Přidat na plochu ➕</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
+        document.getElementById('installModal').style.display = 'flex';
+        return;
+      }
 
-    document.getElementById('modalTitle').innerText = "Přidat na plochu";
-    document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
-    if (modal) modal.style.display = 'flex';
+      document.getElementById('modalTitle').innerText = "Přidat na plochu";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
+      document.getElementById('installModal').style.display = 'flex';
+    });
   }
 
   if ('serviceWorker' in navigator) {
@@ -266,16 +250,27 @@ function ziskatPolohu() {
   }
 </script>
 
-<!-- Načtení mapových knihoven a Firebase -->
+<!-- Načtení mapy a Firebase -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
-  let userLat = null;
-  let userLng = null;
-  let userMarker = null;
+  let mapDiv = document.getElementById('map');
+  if (!mapDiv) {
+    const cardMap = document.createElement('div');
+    cardMap.style.cssText = "background: #1e1e1e; padding: 15px; border-radius: 12px; margin-top: 25px; border: 1px solid #f5c518;";
+    cardMap.innerHTML = `
+      <h3 style="margin: 0 0 5px 0; color: #f5c518; text-align: center;">Živé sledování příjezdu</h3>
+      <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 12px; text-align: center;">
+        Čas příjezdu: <span id="eta-time" style="color: #f5c518;">-- min</span>
+      </div>
+      <div id="map" style="width: 100%; height: 280px; border-radius: 8px; background: #333;"></div>
+    `;
+    const wrap = document.querySelector('.wrap') || document.body;
+    wrap.appendChild(cardMap);
+  }
 
   const map = L.map('map').setView([50.355, 15.921], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -299,76 +294,53 @@ function ziskatPolohu() {
 
   const taxiIcon = L.icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20]
+    iconSize: [35, 35],
+    iconAnchor: [17, 17]
   });
 
   let taxiMarker = null;
-  let animationInterval = null;
 
-  function animateMarker(marker, startPos, endPos, duration) {
-    if (animationInterval) clearInterval(animationInterval);
-    
-    const startTime = performance.now();
-    
-    animationInterval = setInterval(() => {
-      const elapsed = performance.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      const currentLat = startPos.lat + (endPos.lat - startPos.lat) * progress;
-      const currentLng = startPos.lng + (endPos.lng - startPos.lng) * progress;
-      
-      marker.setLatLng([currentLat, currentLng]);
-      
-      if (progress >= 1) {
-        clearInterval(animationInterval);
+  // Sledování uzlu 'driver' i 'traccar'
+  db.ref('driver').on('value', (snapshot) => {
+    let data = snapshot.val();
+    const etaElement = document.getElementById('eta-time');
+
+    if (!data) return;
+
+    // Pokud OwnTracks uloží strukturu pod klíče
+    if (data.lat === undefined && typeof data === 'object') {
+      const keys = Object.keys(data);
+      if (keys.length > 0) {
+        data = data[keys[keys.length - 1]];
       }
-    }, 20);
-  }
+    }
 
-  function listenToDriverLocation(path) {
-    db.ref(path).on('value', (snapshot) => {
-      const data = snapshot.val();
-      const etaElement = document.getElementById('eta-time');
+    const lat = parseFloat(data.lat || data.latitude);
+    const lng = parseFloat(data.lon || data.lng || data.longitude);
+    const lastUpdate = (data.tst ? data.tst * 1000 : Date.now());
 
-      if (!data) {
-        if (etaElement) etaElement.innerText = "Mimo provoz";
-        if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
-        return;
-      }
+    const minutesOld = (Date.now() - lastUpdate) / 1000 / 60;
+    if (minutesOld > 30 || isNaN(lat) || isNaN(lng)) {
+      if (etaElement) etaElement.innerText = "Mimo provoz";
+      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
+      return;
+    }
 
-      const lat = parseFloat(data.lat || (data.location && data.location.lat));
-      const lng = parseFloat(data.lon || data.lng || (data.location && data.location.lng));
-      const rawTime = data.tst ? (data.tst * 1000) : (data.timestamp || (data.location && data.location.timestamp) || Date.now());
+    if (!taxiMarker) {
+      taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
+    } else {
+      taxiMarker.setLatLng([lat, lng]);
+    }
 
-      const minutesOld = (Date.now() - rawTime) / 1000 / 60;
-      if (minutesOld > 15 || isNaN(lat) || isNaN(lng)) {
-        if (etaElement) etaElement.innerText = "Mimo provoz";
-        if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
-        return;
-      }
-
-      const newPos = { lat: lat, lng: lng };
-
-      if (!taxiMarker) {
-        taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
-      } else {
-        const startPos = taxiMarker.getLatLng();
-        animateMarker(taxiMarker, startPos, newPos, 3000);
-      }
-
-      if (userLat !== null && userLng !== null) {
-        const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
-        map.fitBounds(bounds, { padding: [50, 50] });
-        calculateETA(lat, lng, userLat, userLng);
-      } else {
-        map.setView([lat, lng], 14);
-      }
-    });
-  }
-
-  listenToDriverLocation('driver');
-  listenToDriverLocation('traccar');
+    if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
+      const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
+      map.fitBounds(bounds, { padding: [40, 40] });
+      calculateETA(lat, lng, userLat, userLng);
+    } else {
+      map.setView([lat, lng], 14);
+      if (etaElement) etaElement.innerText = "Aktivní";
+    }
+  });
 
   async function calculateETA(driverLat, driverLng, destLat, destLng) {
     try {
@@ -378,11 +350,7 @@ function ziskatPolohu() {
         const minutes = Math.ceil(routeData.routes[0].duration / 60);
         const etaElement = document.getElementById('eta-time');
         if (etaElement) {
-          if (minutes <= 1) {
-            etaElement.innerText = "Příjezd! (Méně než minutu)";
-          } else {
-            etaElement.innerText = `${minutes} min`;
-          }
+          etaElement.innerText = `${minutes} min`;
         }
       }
     } catch (e) {
