@@ -292,22 +292,23 @@ function ziskatPolohu() {
   }
   const db = firebase.database();
 
+  // IKONA ŽLUTÉHO TAXÍKU
   const taxiIcon = L.icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png',
-    iconSize: [35, 35],
-    iconAnchor: [17, 17]
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20]
   });
 
   let taxiMarker = null;
 
-  // Sledování uzlu 'driver' i 'traccar'
+  // Sledování uzlu 'driver'
   db.ref('driver').on('value', (snapshot) => {
     let data = snapshot.val();
     const etaElement = document.getElementById('eta-time');
 
     if (!data) return;
 
-    // Pokud OwnTracks uloží strukturu pod klíče
     if (data.lat === undefined && typeof data === 'object') {
       const keys = Object.keys(data);
       if (keys.length > 0) {
@@ -326,6 +327,7 @@ function ziskatPolohu() {
       return;
     }
 
+    // Zobrazení ikony taxíku na mapě
     if (!taxiMarker) {
       taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
     } else {
