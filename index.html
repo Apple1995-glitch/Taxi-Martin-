@@ -26,6 +26,8 @@ body {
 h1 {
   color: #f5c518;
   margin-bottom: 5px;
+  cursor: pointer;
+  user-select: none;
 }
 p {
   font-size: 1.1em;
@@ -106,16 +108,63 @@ button:hover {
   line-height: 1;
   filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));
 }
+
+/* Karta vozu */
+.car-card {
+  background: #2a2a2a;
+  padding: 18px;
+  border-radius: 14px;
+  margin-top: 20px;
+  text-align: center;
+  border: 2px solid #444;
+}
+
+/* Ovládací panel pro řidiče (ve výchozím stavu skrytý) */
+#admin-panel {
+  display: none;
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 15px;
+  border: 1px dashed #f5c518;
+}
+.btn-admin-on {
+  background: #28a745;
+  color: white;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.btn-admin-off {
+  background: #dc3545;
+  color: white;
+  width: 100%;
+}
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <h1>🚖 Taxi Martin</h1>
+  <!-- Trojklikem na nadpis se otevře ověření PINem pro správu -->
+  <h1 onclick="toggleAdminPanel()">🚖 Taxi Martin</h1>
   <p>Rychlá a spolehlivá doprava</p>
   <a href="tel:777020281" class="btn-call">
     📞 Zavolat Taxi Martin<br>(777 020 281)
   </a>
+
+  <!-- Karta s informací o stavu VW Golf VII -->
+  <div id="golf-card" class="car-card">
+    <h3 style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.2em;">🚘 VW Golf VII</h3>
+    <div id="golf-status" style="font-size: 1.2em; font-weight: bold; color: #aaa;">
+      Načítám stav...
+    </div>
+
+    <!-- Skryté ovládání po zadání PINu (1875) -->
+    <div id="admin-panel">
+      <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
+      <button class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
+      <button class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
+    </div>
+  </div>
 
   <hr style="border: 0; border-top: 1px solid #444; margin: 25px 0;">
 
@@ -294,6 +343,47 @@ function ziskatPolohu() {
   }
   const db = firebase.database();
 
+  // Sledování stavu vozu VW Golf VII z databáze
+  db.ref('golf_active').on('value', (snapshot) => {
+    const active = snapshot.val();
+    const golfStatus = document.getElementById('golf-status');
+    const golfCard = document.getElementById('golf-card');
+
+    if (active === true) {
+      golfStatus.innerHTML = "<span style='color: #28a745;'>🟢 VW Golf VII – V PROVOZU</span>";
+      golfCard.style.borderColor = "#28a745";
+    } else {
+      golfStatus.innerHTML = "<span style='color: #dc3545;'>🔴 VW Golf VII – MIMO PROVOZ</span>";
+      golfCard.style.borderColor = "#dc3545";
+    }
+  });
+
+  // Funkce pro nastavení stavu vozu
+  function setGolfStatus(state) {
+    db.ref('golf_active').set(state);
+  }
+
+  // Otevření skrytého ovládání (3x klepnutí na nadpis "🚖 Taxi Martin" + nový PIN: 1875)
+  let clickCount = 0;
+  function toggleAdminPanel() {
+    clickCount++;
+    if (clickCount >= 3) {
+      const panel = document.getElementById('admin-panel');
+      if (panel.style.display !== 'block') {
+        const pin = prompt("Zadejte PIN pro ovládání vozu:");
+        if (pin === "1875") {
+          panel.style.display = 'block';
+        } else if (pin !== null) {
+          alert("Nesprávný PIN!");
+        }
+      } else {
+        panel.style.display = 'none';
+      }
+      clickCount = 0;
+    }
+    setTimeout(() => { clickCount = 0; }, 2000);
+  }
+
   // ŽLUTÝ TAXÍK 🚕
   const taxiIcon = L.divIcon({
     html: '<div class="car-marker">🚕</div>',
@@ -325,7 +415,6 @@ function ziskatPolohu() {
     }, 16);
   }
 
-  // Funkce, která spolehlivě projde celou databázi a najde NEJNOVĚJŠÍ zprávu podle času
   function getLatestLocation(rootObj) {
     let latest = null;
 
@@ -336,7 +425,6 @@ function ziskatPolohu() {
       const lng = parseFloat(node.lon || node.lng || node.longitude);
 
       if (!isNaN(lat) && !isNaN(lng)) {
-        // Časové razítko (OwnTracks používá 'tst' v sekundách)
         let time = node.tst ? (node.tst * 1000) : (node.created_at || 0);
         
         if (!latest || time > latest.time) {
