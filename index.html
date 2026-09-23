@@ -103,11 +103,13 @@ button:hover {
   text-align: center;
   margin-top: -5px;
 }
-.car-marker {
-  font-size: 38px;
+
+/* Profesionální špendlík pro Taxi Martin */
+.pin-marker {
+  font-size: 36px;
   text-align: center;
   line-height: 1;
-  filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.6));
+  filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.7));
 }
 
 /* Karta vozu */
@@ -118,10 +120,9 @@ button:hover {
   margin-top: 20px;
   text-align: center;
   border: 2px solid #444;
-  user-select: none;
 }
 
-/* Ovládací panel pro správu (PIN 1875) */
+/* Ovládací panel pro řidiče */
 #admin-panel {
   display: none;
   background: #1a1a1a;
@@ -130,17 +131,6 @@ button:hover {
   margin-top: 15px;
   border: 1px dashed #f5c518;
 }
-
-/* Nový panel pro živé vysílání řidiče (PIN 11856) */
-#driver-gps-panel {
-  display: none;
-  background: #142518;
-  padding: 15px;
-  border-radius: 10px;
-  margin-top: 15px;
-  border: 1px dashed #28a745;
-}
-
 .btn-admin-on {
   background: #28a745;
   color: white;
@@ -157,32 +147,31 @@ button:hover {
 <body>
 
 <div class="wrap">
-  <!-- Trojklikem na nadpis se otevře ověření PINem (1875) pro správu -->
+  <!-- Trojklikem na nadpis se otevře ověření PINem pro správu -->
   <h1 onclick="toggleAdminPanel()">🚖 Taxi Martin</h1>
   <p>Rychlá a spolehlivá doprava</p>
   <a href="tel:777020281" class="btn-call">
     📞 Zavolat Taxi Martin<br>(777 020 281)
   </a>
 
-  <!-- Karta s informací o stavu VW Golf VII (Trojklikem na kartu se otevře přihlášení řidiče s PINem 11856) -->
-  <div id="golf-card" class="car-card" onclick="toggleDriverGpsPanel()">
-    <h3 style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.2em; pointer-events: none;">🚘 VW Golf VII</h3>
-    <div id="golf-status" style="font-size: 1.2em; font-weight: bold; color: #aaa; pointer-events: none;">
+  <!-- Karta s informací o stavu VW Golf VII -->
+  <div id="golf-card" class="car-card">
+    <h3 style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.2em;">🚘 VW Golf VII</h3>
+    <div id="golf-status" style="font-size: 1.2em; font-weight: bold; color: #aaa;">
       Načítám stav...
     </div>
 
-    <!-- Původní skryté ovládání správce po zadání PINu (1875) -->
-    <div id="admin-panel" onclick="event.stopPropagation()">
+    <!-- Skryté ovládání po zadání PINu (1875 pro panel) -->
+    <div id="admin-panel">
       <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
       <button class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
       <button class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
-    </div>
 
-    <!-- NOVÉ: Přidané ovládací tlačítko pro řidiče (PIN 11856) -->
-    <div id="driver-gps-panel" onclick="event.stopPropagation()">
-      <p style="margin: 0 0 5px 0; font-size: 0.95em; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
-      <div id="driver-live-status" style="font-size: 0.85em; color: #ccc; margin-bottom: 10px;">GPS vysílání vypnuto</div>
-      <button id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶️ SPUSTIT JÍZDU (Vysílat GPS)</button>
+      <hr style="border:0; border-top:1px dashed #555; margin: 15px 0;">
+      <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #f5c518; font-weight: bold;">📡 Živé vysílání GPS auta z tohoto mobilu:</p>
+      <button class="btn-admin-on" onclick="startDriverTrackingWithPIN()">📡 ZAPNOUT SDÍLENÍ POLOHY</button>
+      <button class="btn-admin-off" onclick="stopDriverTracking()">🛑 VYPNUT SDÍLENÍ POLOHY</button>
+      <div id="driver-gps-status" style="margin-top: 8px; font-size: 0.85em; color: #aaa;">Vysílání polohy vypnuto.</div>
     </div>
   </div>
 
@@ -343,8 +332,7 @@ function ziskatPolohu() {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
-  // Inicializace mapy
-  const map = L.map('map').setView([50.355, 15.921], 16);
+  const map = L.map('map').setView([50.355, 15.921], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
@@ -383,7 +371,59 @@ function ziskatPolohu() {
     db.ref('golf_active').set(state);
   }
 
-  // PŮVODNÍ: Trojklik na nadpis + PIN 1875 pro nastavení stavu
+  // VYSÍLÁNÍ POLOHY Z TELEFONU SE CHRÁNĚNÝM PINEM 11356
+  let driverWatchId = null;
+
+  function startDriverTrackingWithPIN() {
+    const pin = prompt("Zadejte PIN pro zapnutí sdílení polohy:");
+    if (pin === "11356") {
+      startDriverTracking();
+    } else if (pin !== null) {
+      alert("Nesprávný PIN pro sdílení polohy!");
+    }
+  }
+
+  function startDriverTracking() {
+    if (!navigator.geolocation) {
+      alert("Prohlížeč nepodporuje zjišťování polohy.");
+      return;
+    }
+    const statusDiv = document.getElementById('driver-gps-status');
+    statusDiv.innerText = "⏳ Načítám vaši GPS polohu...";
+
+    driverWatchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        db.ref('driver').set({
+          lat: lat,
+          lng: lng,
+          tst: Date.now()
+        });
+
+        statusDiv.innerHTML = `<span style="color:#28a745;">✅ Poloha vysílána (${new Date().toLocaleTimeString()})</span>`;
+      },
+      (error) => {
+        statusDiv.innerText = "❌ Chyba zjištění polohy. Povolte GPS v prohlížeči.";
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+      }
+    );
+  }
+
+  function stopDriverTracking() {
+    if (driverWatchId !== null) {
+      navigator.geolocation.clearWatch(driverWatchId);
+      driverWatchId = null;
+    }
+    db.ref('driver').remove();
+    document.getElementById('driver-gps-status').innerText = "🛑 Vysílání polohy bylo vypnuto.";
+  }
+
   let clickCount = 0;
   function toggleAdminPanel() {
     clickCount++;
@@ -404,116 +444,22 @@ function ziskatPolohu() {
     setTimeout(() => { clickCount = 0; }, 2000);
   }
 
-  // NOVÉ: Trojklik na kartu vozu + PIN 11856 pro přihlášení řidiče
-  let driverClickCount = 0;
-  function toggleDriverGpsPanel() {
-    driverClickCount++;
-    if (driverClickCount >= 3) {
-      const panel = document.getElementById('driver-gps-panel');
-      if (panel.style.display !== 'block') {
-        const pin = prompt("Zadejte PIN ŘÍDIČE pro spuštění živého vysílání:");
-        if (pin === "11856") {
-          panel.style.display = 'block';
-        } else if (pin !== null) {
-          alert("Nesprávný PIN řidiče!");
-        }
-      } else {
-        panel.style.display = 'none';
-      }
-      driverClickCount = 0;
-    }
-    setTimeout(() => { driverClickCount = 0; }, 2000);
-  }
-
-  // NOVÉ: Spuštění odesílání živých GPS dat z mobilu řidiče
-  let watchPositionId = null;
-  function toggleGpsTracking() {
-    const statusDiv = document.getElementById('driver-live-status');
-    const btn = document.getElementById('btn-toggle-gps');
-
-    if (watchPositionId !== null) {
-      navigator.geolocation.clearWatch(watchPositionId);
-      watchPositionId = null;
-      statusDiv.innerText = "GPS vysílání vypnuto";
-      btn.innerText = "▶️ SPUSTIT JÍZDU (Vysílat GPS)";
-      btn.className = "btn-admin-on";
-      return;
-    }
-
-    if (!navigator.geolocation) {
-      alert("Tento telefon nepodporuje sledování GPS.");
-      return;
-    }
-
-    statusDiv.innerText = "📡 Zapínám GPS vysílání...";
-    setGolfStatus(true); // Automaticky označí vůz v aplikaci jako V PROVOZU
-
-    watchPositionId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const now = Date.now();
-
-        // Odesílání polohy do Firebase
-        db.ref('driver').set({
-          lat: lat,
-          lng: lng,
-          timestamp: now
-        });
-
-        statusDiv.innerText = `🟢 VYSÍLÁM POLOHU: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        btn.innerText = "⏹️ UKONČIT JÍZDU (Vypnout GPS)";
-        btn.className = "btn-admin-off";
-      },
-      (err) => {
-        statusDiv.innerText = "❌ Chyba GPS: " + err.message;
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-      }
-    );
-  }
-
-  // Ikona autíčka podporující otáčení (Bolt styl)
-  const taxiIcon = L.divIcon({
-    html: '<div id="car-emoji" class="car-marker" style="transition: transform 0.3s ease; transform-origin: center;">🚕</div>',
+  // ČERVENÝ ŠPENDLÍK 📍 PRO TAXI MARTIN
+  const pinIcon = L.divIcon({
+    html: '<div class="pin-marker">📍</div>',
     className: '',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -20]
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36]
   });
 
   let taxiMarker = null;
   let animId = null;
 
-  // Výpočet úhlu pro natočení ikonky ve směru jízdy
-  function calculateBearing(startLat, startLng, destLat, destLng) {
-    const startLatRad = startLat * (Math.PI / 180);
-    const startLngRad = startLng * (Math.PI / 180);
-    const destLatRad = destLat * (Math.PI / 180);
-    const destLngRad = destLng * (Math.PI / 180);
-
-    const y = Math.sin(destLngRad - startLngRad) * Math.cos(destLatRad);
-    const x = Math.cos(startLatRad) * Math.sin(destLatRad) -
-              Math.sin(startLatRad) * Math.cos(destLatRad) * Math.cos(destLngRad - startLngRad);
-
-    const brng = Math.atan2(y, x) * (180 / Math.PI);
-    return (brng + 360) % 360;
-  }
-
-  // Plynulá animace pohybu autíčka i kamery
+  // Plynulá animace pohybu špendlíku
   function animateMarker(marker, startPos, endPos, duration) {
     if (animId) cancelAnimationFrame(animId);
     const startTime = performance.now();
-
-    // Natočí autíčko po směru jízdy
-    const angle = calculateBearing(startPos.lat, startPos.lng, endPos.lat, endPos.lng);
-    const carEmoji = document.getElementById('car-emoji');
-    if (carEmoji) {
-      carEmoji.style.transform = `rotate(${angle}deg)`;
-    }
 
     function frame(now) {
       const elapsed = now - startTime;
@@ -522,11 +468,7 @@ function ziskatPolohu() {
       const lat = startPos.lat + (endPos.lat - startPos.lat) * progress;
       const lng = startPos.lng + (endPos.lng - startPos.lng) * progress;
 
-      // Změna pozice autíčka
       marker.setLatLng([lat, lng]);
-
-      // Kamera plynule kombinuje posun auta
-      map.panTo([lat, lng], { animate: false });
 
       if (progress < 1) {
         animId = requestAnimationFrame(frame);
@@ -535,67 +477,53 @@ function ziskatPolohu() {
     animId = requestAnimationFrame(frame);
   }
 
-  // Vyhledání nejnovější polohy v celé Firebase databázi
-  function getLatestLocation(rootObj) {
-    let latest = null;
-
-    function walk(node) {
-      if (!node || typeof node !== 'object') return;
-
-      let lat = node.lat !== undefined ? node.lat : node.latitude;
-      let lng = node.lon !== undefined ? node.lon : (node.lng !== undefined ? node.lng : node.longitude);
-
-      if (lat !== undefined && lng !== undefined) {
-        lat = parseFloat(lat);
-        lng = parseFloat(lng);
-        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-          let time = node.timestamp || node.tst || node.time || node.created_at || 0;
-          if (typeof time === 'number' && time < 10000000000) {
-            time = time * 1000;
-          }
-          if (!latest || time >= latest.time) {
-            latest = { lat, lng, time };
-          }
-        }
-      }
-
-      for (const key in node) {
-        if (typeof node[key] === 'object') {
-          walk(node[key]);
-        }
-      }
-    }
-
-    walk(rootObj);
-    return latest;
-  }
-
-  // Příjem živých dat z Firebase
-  db.ref().on('value', (snapshot) => {
-    const rootData = snapshot.val();
+  // Sledování polohy přímo z uzlu 'driver'
+  db.ref('driver').on('value', (snapshot) => {
+    let data = snapshot.val();
     const etaElement = document.getElementById('eta-time');
 
-    if (!rootData) return;
+    if (!data) {
+      if (taxiMarker) { map.removeLayer(taxiMarker); taxiMarker = null; }
+      if (etaElement) etaElement.innerText = "Mimo provoz 🔴";
+      return;
+    }
 
-    const loc = getLatestLocation(rootData);
-    if (!loc) return;
+    // Podpora pro přímé souřadnice i pro vnořené struktury
+    let lat = data.lat !== undefined ? data.lat : data.latitude;
+    let lng = data.lon !== undefined ? data.lon : (data.lng !== undefined ? data.lng : data.longitude);
 
-    const newPos = { lat: loc.lat, lng: loc.lng };
-
-    if (!taxiMarker) {
-      taxiMarker = L.marker([loc.lat, loc.lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
-      map.setView([loc.lat, loc.lng], 16);
-    } else {
-      const startPos = taxiMarker.getLatLng();
-      // Pokud se souřadnice změní, autíčko plynule přejede
-      if (Math.abs(startPos.lat - newPos.lat) > 0.000005 || Math.abs(startPos.lng - newPos.lng) > 0.000005) {
-        animateMarker(taxiMarker, startPos, newPos, 1500);
+    if ((lat === undefined || lng === undefined) && typeof data === 'object') {
+      const keys = Object.keys(data);
+      if (keys.length > 0) {
+        const lastItem = data[keys[keys.length - 1]];
+        if (lastItem) {
+          lat = lastItem.lat !== undefined ? lastItem.lat : lastItem.latitude;
+          lng = lastItem.lon !== undefined ? lastItem.lon : (lastItem.lng !== undefined ? lastItem.lng : lastItem.longitude);
+        }
       }
     }
 
-    // Výpočet zbývajícího času příjezdu
+    lat = parseFloat(lat);
+    lng = parseFloat(lng);
+
+    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+
+    const newPos = { lat, lng };
+
+    if (!taxiMarker) {
+      taxiMarker = L.marker([lat, lng], { icon: pinIcon }).addTo(map).bindPopup("Taxi Martin");
+      map.setView([lat, lng], 15);
+    } else {
+      const startPos = taxiMarker.getLatLng();
+      if (Math.abs(startPos.lat - newPos.lat) > 0.00001 || Math.abs(startPos.lng - newPos.lng) > 0.00001) {
+        animateMarker(taxiMarker, startPos, newPos, 2000);
+      }
+    }
+
     if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
-      calculateETA(loc.lat, loc.lng, userLat, userLng);
+      const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
+      map.fitBounds(bounds, { padding: [40, 40] });
+      calculateETA(lat, lng, userLat, userLng);
     } else {
       if (etaElement) etaElement.innerText = "V provozu 🟢";
     }
