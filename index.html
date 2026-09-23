@@ -119,7 +119,7 @@ button:hover {
   border: 2px solid #444;
 }
 
-/* Ovládací panel pro řidiče (ve výchozím stavu skrytý) */
+/* Ovládací panel pro řidiče */
 #admin-panel {
   display: none;
   background: #1a1a1a;
@@ -363,7 +363,7 @@ function ziskatPolohu() {
     db.ref('golf_active').set(state);
   }
 
-  // Otevření skrytého ovládání (3x klepnutí na nadpis "🚖 Taxi Martin" + nový PIN: 1875)
+  // Otevření skrytého ovládání (3x klepnutí na nadpis + PIN 1875)
   let clickCount = 0;
   function toggleAdminPanel() {
     clickCount++;
@@ -415,57 +415,60 @@ function ziskatPolohu() {
     }, 16);
   }
 
-  function getLatestLocation(rootObj) {
-    let latest = null;
+  // Funkce pro nalezení souřadnic z Traccar/Firebase zápisu
+  function parseLocation(data) {
+    if (!data) return null;
+    
+    // 1. Přímý objekt s lat/lon
+    let lat = parseFloat(data.lat || data.latitude);
+    let lng = parseFloat(data.lon || data.lng || data.longitude);
 
-    function walk(node) {
-      if (!node || typeof node !== 'object') return;
+    if (!isNaN(lat) && !isNaN(lng)) {
+      return { lat, lng };
+    }
 
-      const lat = parseFloat(node.lat || node.latitude);
-      const lng = parseFloat(node.lon || node.lng || node.longitude);
+    // 2. Traccar posílá pole [ { lat, lon, ... } ]
+    if (Array.isArray(data) && data.length > 0) {
+      const last = data[data.length - 1];
+      lat = parseFloat(last.lat || last.latitude);
+      lng = parseFloat(last.lon || last.lng || last.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
 
-      if (!isNaN(lat) && !isNaN(lng)) {
-        let time = node.tst ? (node.tst * 1000) : (node.created_at || 0);
-        
-        if (!latest || time > latest.time) {
-          latest = { lat, lng, time };
-        }
-      }
-
-      for (const key in node) {
-        if (typeof node[key] === 'object') {
-          walk(node[key]);
-        }
+    // 3. Objekt s automatickými klíči od Firebase { "-NX...": { lat, lon } }
+    if (typeof data === 'object') {
+      const keys = Object.keys(data);
+      if (keys.length > 0) {
+        const lastKey = keys[keys.length - 1];
+        return parseLocation(data[lastKey]);
       }
     }
 
-    walk(rootObj);
-    return latest;
+    return null;
   }
 
-  db.ref().on('value', (snapshot) => {
-    const rootData = snapshot.val();
+  // Poslech změn přímo na uzlu 'driver'
+  db.ref('driver').on('value', (snapshot) => {
+    const rawData = snapshot.val();
     const etaElement = document.getElementById('eta-time');
 
-    if (!rootData) return;
+    const loc = parseLocation(rawData);
+    if (!loc) return;
 
-    const latestLoc = getLatestLocation(rootData);
-    if (!latestLoc) return;
-
-    const newPos = { lat: latestLoc.lat, lng: latestLoc.lng };
+    const newPos = { lat: loc.lat, lng: loc.lng };
 
     if (!taxiMarker) {
-      taxiMarker = L.marker([latestLoc.lat, latestLoc.lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
-      map.setView([latestLoc.lat, latestLoc.lng], 15);
+      taxiMarker = L.marker([loc.lat, loc.lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
+      map.setView([loc.lat, loc.lng], 15);
     } else {
       const startPos = taxiMarker.getLatLng();
       animateMarker(taxiMarker, startPos, newPos, 2000);
     }
 
     if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
-      const bounds = L.latLngBounds([[latestLoc.lat, latestLoc.lng], [userLat, userLng]]);
+      const bounds = L.latLngBounds([[loc.lat, loc.lng], [userLat, userLng]]);
       map.fitBounds(bounds, { padding: [40, 40] });
-      calculateETA(latestLoc.lat, latestLoc.lng, userLat, userLng);
+      calculateETA(loc.lat, loc.lng, userLat, userLng);
     } else {
       if (etaElement) etaElement.innerText = "V provozu 🟢";
     }
