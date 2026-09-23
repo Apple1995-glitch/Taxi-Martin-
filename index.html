@@ -2,234 +2,390 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Taxi Martin</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="IMG_2858.jpeg">
 
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #000000;
-  color: #fff;
+* {
+  box-sizing: border-box;
   margin: 0;
-  padding: 20px;
-  text-align: center;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
-.wrap {
-  max-width: 500px;
-  margin: 0 auto;
-  background: #1c1c1c;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #121212;
+  color: #fff;
 }
-h1 {
+
+/* Celoobrazovková mapa jako základ Uber UI */
+#map {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Horní plovoucí lišta */
+.app-header {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  z-index: 1000;
+  background: rgba(26, 26, 26, 0.92);
+  backdrop-filter: blur(12px);
+  padding: 12px 18px;
+  border-radius: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.app-title {
+  font-size: 1.2rem;
+  font-weight: 800;
   color: #f5c518;
-  margin-bottom: 5px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-call-mini {
+  background: #28a745;
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+  transition: transform 0.1s ease;
+}
+
+.btn-call-mini:active {
+  transform: scale(0.96);
+}
+
+/* Spodní výsuvný panel (Bottom Sheet) */
+.bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #1c1c1e;
+  border-radius: 24px 24px 0 0;
+  padding: 16px 20px 25px 20px;
+  max-height: 75vh;
+  overflow-y: auto;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 5px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+  margin: 0 auto 15px auto;
+}
+
+/* Karta vozu - VW Golf VII */
+.car-preview {
+  background: linear-gradient(135deg, #2a2a2e 0%, #222225 100%);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.car-info {
+  text-align: left;
+}
+
+.car-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f5c518;
   cursor: pointer;
   user-select: none;
 }
-p {
-  font-size: 1.1em;
-  color: #ccc;
+
+.car-badge {
+  display: inline-block;
+  background: rgba(245, 197, 24, 0.15);
+  color: #f5c518;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-top: 4px;
 }
-.btn-call {
-  display: block;
-  background: #28a745;
-  color: white;
-  text-decoration: none;
-  padding: 15px;
-  font-size: 1.3em;
-  font-weight: bold;
-  border-radius: 8px;
-  margin: 20px 0;
+
+.eta-badge {
+  text-align: right;
 }
-.btn-call:hover {
-  background: #218838;
+
+.eta-label {
+  font-size: 0.75rem;
+  color: #aaa;
 }
+
+.eta-time {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #f5c518;
+}
+
+/* Formulář objednávky */
 form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 10px;
   text-align: left;
 }
-label {
-  font-size: 0.9em;
-  color: #aaa;
-}
-input, select {
-  padding: 12px;
-  border-radius: 6px;
-  border: 1px solid #444;
-  background: #2b2b2b;
-  color: #fff;
-  font-size: 1em;
-  width: 100%;
-  box-sizing: border-box;
-}
-button {
-  background: #f5c518;
-  color: #000;
-  font-weight: bold;
-  padding: 14px;
-  border: none;
-  border-radius: 6px;
-  font-size: 1.1em;
-  cursor: pointer;
-  margin-top: 10px;
-}
-button:hover {
-  background: #e0b000;
-}
-.btn-location {
-  background: #28a745;
-  color: white;
-  font-weight: bold;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: 1em;
-  cursor: pointer;
-  margin-top: 0;
-}
-.btn-location:hover {
-  background: #218838;
-}
-#gpsStatus {
-  font-size: 0.9em;
-  color: #aaa;
-  text-align: center;
-  margin-top: -5px;
+
+.input-group {
+  position: relative;
 }
 
-/* Špendlík pro Taxi Martin */
+.input-group label {
+  font-size: 0.75rem;
+  color: #8e8e93;
+  margin-bottom: 4px;
+  display: block;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #3a3a3c;
+  background: #2c2c2e;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus {
+  border-color: #f5c518;
+}
+
+.btn-location {
+  background: rgba(40, 167, 69, 0.15);
+  color: #28a745;
+  border: 1px solid rgba(40, 167, 69, 0.4);
+  font-weight: 700;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 2px;
+  transition: background 0.2s;
+}
+
+.btn-location:active {
+  background: rgba(40, 167, 69, 0.3);
+}
+
+#gpsStatus {
+  font-size: 0.75rem;
+  color: #8e8e93;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.btn-submit {
+  background: #f5c518;
+  color: #000;
+  font-weight: 800;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  margin-top: 8px;
+  box-shadow: 0 4px 20px rgba(245, 197, 24, 0.25);
+  transition: transform 0.1s ease, background 0.2s;
+}
+
+.btn-submit:active {
+  transform: scale(0.98);
+  background: #e0b000;
+}
+
+/* PIN sekce - Správa a Řidič */
+#admin-panel, #driver-gps-panel {
+  display: none;
+  background: #121212;
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+#admin-panel { border: 1px dashed #f5c518; }
+#driver-gps-panel { border: 1px dashed #28a745; }
+
+.btn-admin-on {
+  background: #28a745;
+  color: white;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.btn-admin-off {
+  background: #dc3545;
+  color: white;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Špendlík na mapě */
 .pin-marker {
   font-size: 36px;
   text-align: center;
   line-height: 1;
   filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.7));
 }
-
-/* Karta vozu */
-.car-card {
-  background: #2a2a2a;
-  padding: 18px;
-  border-radius: 14px;
-  margin-top: 20px;
-  text-align: center;
-  border: 2px solid #444;
-}
-
-/* Ovládací panel pro správu (PIN 1875) */
-#admin-panel {
-  display: none;
-  background: #1a1a1a;
-  padding: 15px;
-  border-radius: 10px;
-  margin-top: 15px;
-  border: 1px dashed #f5c518;
-}
-
-/* Panel pro živé vysílání řidiče (PIN 11856) */
-#driver-gps-panel {
-  display: none;
-  background: #142518;
-  padding: 15px;
-  border-radius: 10px;
-  margin-top: 15px;
-  border: 1px dashed #28a745;
-}
-
-.btn-admin-on {
-  background: #28a745;
-  color: white;
-  width: 100%;
-  margin-bottom: 8px;
-}
-.btn-admin-off {
-  background: #dc3545;
-  color: white;
-  width: 100%;
-}
 </style>
 </head>
 <body>
 
-<div class="wrap">
-  <!-- Trojklikem na nadpis se otevře ověření PINem pro Správu (1875) -->
-  <h1 onclick="toggleAdminPanel()">🚖 Taxi Martin</h1>
-  <p>Rychlá a spolehlivá doprava</p>
-  <a href="tel:777020281" class="btn-call">
-    📞 Zavolat Taxi Martin<br>(777 020 281)
+<!-- MAPA PŘES CELOU OBRAZOVKU -->
+<div id="map"></div>
+
+<!-- HORNÍ SVIŠTÍCÍ HLAVIČKA -->
+<div class="app-header">
+  <div class="app-title" onclick="toggleAdminPanel()">
+    🚖 Taxi Martin
+  </div>
+  <a href="tel:777020281" class="btn-call-mini">
+    📞 777 020 281
   </a>
+</div>
 
-  <!-- Karta s informací o stavu VW Golf VII -->
-  <div id="golf-card" class="car-card">
-    <!-- Trojklikem na název auta se otevře ovládání pro ŘIDIČE (11856) -->
-    <h3 onclick="toggleDriverPanel()" style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.2em; cursor: pointer; user-select: none;">🚘 VW Golf VII</h3>
-    <div id="golf-status" style="font-size: 1.2em; font-weight: bold; color: #aaa;">
-      Načítám stav...
+<!-- SPODNÍ UBER-STYLE PANEL -->
+<div class="bottom-sheet">
+  <div class="sheet-handle"></div>
+
+  <!-- KARTA VOZU -->
+  <div class="car-preview">
+    <div class="car-info">
+      <div class="car-title" onclick="toggleDriverPanel()">🚘 VW Golf VII</div>
+      <div class="car-badge">Prémiový vůz</div>
+      <div id="golf-status" style="font-size: 0.8rem; font-weight: bold; margin-top: 4px; color: #aaa;">Načítám stav...</div>
     </div>
-
-    <!-- Skryté ovládání správce (PIN 1875 po 3x kliku na nadpis "Taxi Martin") -->
-    <div id="admin-panel">
-      <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
-      <button type="button" class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
-      <button type="button" class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
-    </div>
-
-    <!-- Skryté ovládání řidiče (PIN 11856 po 3x kliku na nadpis "VW Golf VII") -->
-    <div id="driver-gps-panel">
-      <p style="margin: 0 0 5px 0; font-size: 0.95em; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
-      <div id="driver-live-status" style="font-size: 0.85em; color: #ccc; margin-bottom: 10px;">GPS vysílání vypnuto</div>
-      <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶️ SPUSTIT JÍZDU (Vysílat GPS)</button>
+    <div class="eta-badge">
+      <div class="eta-label">Příjezd za</div>
+      <div id="eta-time" class="eta-time">-- min</div>
     </div>
   </div>
 
-  <hr style="border: 0; border-top: 1px solid #444; margin: 25px 0;">
+  <!-- SKRYTÉ PANELY PRO SPRÁVCE A ŘIDIČE -->
+  <div id="admin-panel">
+    <p style="margin: 0 0 10px 0; font-size: 0.85rem; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
+    <button type="button" class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
+    <button type="button" class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
+  </div>
 
-  <h3>Online Objednávka</h3>
+  <div id="driver-gps-panel">
+    <p style="margin: 0 0 5px 0; font-size: 0.85rem; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
+    <div id="driver-live-status" style="font-size: 0.8rem; color: #ccc; margin-bottom: 8px;">GPS vysílání vypnuto</div>
+    <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶️ SPUSTIT JÍZDU (Vysílat GPS)</button>
+  </div>
 
+  <!-- OBJEDNÁVKOVÝ FORMULÁŘ -->
   <form action="https://formsubmit.co/jaroslavvachaonline@gmail.com" method="POST">
     <input type="hidden" name="_subject" value="Nová objednávka Taxi Martin!">
     <input type="hidden" name="_captcha" value="false">
 
-    <label for="name">Jméno a příjmení:</label>
-    <input type="text" id="name" name="Jmeno" placeholder="Vaše jméno" required>
+    <div class="input-group">
+      <label for="name">JMÉNO A PŘÍJMENÍ</label>
+      <input type="text" id="name" name="Jmeno" placeholder="Vaše jméno" required>
+    </div>
 
-    <label for="phone">Telefonní číslo:</label>
-    <input type="tel" id="phone" name="Telefon" placeholder="Např. 777 020 281" required>
+    <div class="input-group">
+      <label for="phone">TELEFONNÍ ČÍSLO</label>
+      <input type="tel" id="phone" name="Telefon" placeholder="Např. 777 020 281" required>
+    </div>
 
-    <label for="from">Odkud (adresa / místo):</label>
-    <input type="text" id="from" name="Odkud" placeholder="Ulice, město nebo např. Hlavní nádraží" required>
+    <div class="input-group">
+      <label for="from">MÍSTO VYZVEDNUTÍ (ODKUD)</label>
+      <input type="text" id="from" name="Odkud" placeholder="Ulice, město nebo Hlavní nádraží" required>
+    </div>
 
     <button type="button" class="btn-location" onclick="ziskatPolohu()">
       📍 Použít moji aktuální polohu
     </button>
     <div id="gpsStatus">Poloha zatím nebyla načtena.</div>
 
-    <label for="to">Kam (cílová adresa):</label>
-    <input type="text" id="to" name="Kam" placeholder="Cílová adresa" required>
-
-    <label for="time">Čas přistavení:</label>
-    <input type="text" id="time" name="Cas_pristaveni" placeholder="Co nejdříve / přesný čas" required>
-
-    <button type="submit">Odeslat objednávku</button>
-  </form>
-
-  <!-- Karta s informacemi o času příjezdu -->
-  <div style="background: #2a2a2a; padding: 20px; border-radius: 14px; margin-top: 25px; text-align: center;">
-    <h3 style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.3em;">Živé sledování příjezdu</h3>
-    <div style="font-size: 1.3em; font-weight: bold;">
-      Čas příjezdu: <span id="eta-time" style="color: #f5c518;">-- min</span>
+    <div class="input-group">
+      <label for="to">CÍLOVÁ ADRESA (KAM)</label>
+      <input type="text" id="to" name="Kam" placeholder="Kam to bude?" required>
     </div>
-  </div>
 
-  <!-- Mapa -->
-  <div id="map" style="width: 100%; height: 350px; border-radius: 14px; margin-top: 15px; background: #333;"></div>
+    <div class="input-group">
+      <label for="time">ČAS PRISTAVENÍ</label>
+      <input type="text" id="time" name="Cas_pristaveni" placeholder="Co nejdříve / přesný čas" required>
+    </div>
+
+    <button type="submit" class="btn-submit">🚖 Potvrdit objednávku</button>
+  </form>
 </div>
+
+<!-- BANNER PRO INSTALACI APLIKACE -->
+<div id="universal-banner" style="position: fixed; bottom: 15px; left: 15px; right: 15px; background: #28a745; color: white; padding: 10px 14px; border-radius: 14px; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: space-between;">
+  <span style="font-size: 12px; font-weight: bold; padding-right: 8px;">Nainstalujte si aplikaci na plochu!</span>
+  <div style="display: flex; gap: 6px; align-items: center;">
+    <button type="button" id="universal-btn" style="background: white; color: #28a745; border: none; padding: 6px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">Stáhnout</button>
+    <button type="button" onclick="document.getElementById('universal-banner').style.display='none'" style="background: transparent; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0 4px;">✕</button>
+  </div>
+</div>
+
+<div id="installModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: #222; border: 2px solid #f5c518; border-radius: 16px; padding: 20px; max-width: 400px; text-align: left; color: #fff; position: relative;">
+    <button type="button" onclick="document.getElementById('installModal').style.display='none'" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: #aaa; font-size: 24px; cursor: pointer;">✕</button>
+    <h3 style="margin-top:0; color:#f5c518;" id="modalTitle">Jak přidat aplikaci na plochu</h3>
+    <div id="modalBody" style="font-size:0.9em; line-height:1.5; margin-top: 10px;"></div>
+    <button type="button" onclick="document.getElementById('installModal').style.display='none'" style="width:100%; margin-top:15px; background:#28a745; color:white; padding: 12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Rozumím</button>
+  </div>
+</div>
+
+<!-- LEAFLET & FIREBASE SCRIPTY -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
 let userLat = null;
@@ -251,7 +407,7 @@ function ziskatPolohu() {
       userLng = position.coords.longitude;
       const mapa = "https://www.google.com/maps?q=" + userLat + "," + userLng;
       fromInput.value = mapa;
-      gpsStatus.innerText = "✅ Poloha načtena – můžete odeslat objednávku.";
+      gpsStatus.innerText = "✅ Poloha načtena.";
     },
     function(error) {
       gpsStatus.innerText = "❌ Poloha nebyla načtena.";
@@ -259,387 +415,357 @@ function ziskatPolohu() {
     }
   );
 }
-</script>
 
-<!-- Banner pro instalaci aplikace -->
-<div id="universal-banner" style="position: fixed; bottom: 20px; left: 5%; right: 5%; background: #28a745; color: white; padding: 12px 15px; border-radius: 12px; font-family: sans-serif; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: space-between;">
-  <span style="font-size: 13px; font-weight: bold; padding-right: 8px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
-  <div style="display: flex; gap: 8px; align-items: center;">
-    <button type="button" id="universal-btn" style="background: white; color: #28a745; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap;">Stáhnout</button>
-    <button type="button" onclick="document.getElementById('universal-banner').style.display='none'" style="background: transparent; color: white; border: none; font-size: 18px; font-weight: bold; cursor: pointer; padding: 0 5px;">✕</button>
-  </div>
-</div>
+/* BANNER INSTALACE LOGIKA */
+var deferredPrompt;
+var banner = document.getElementById('universal-banner');
+var btn = document.getElementById('universal-btn');
 
-<div id="installModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
-  <div style="background: #222; border: 2px solid #f5c518; border-radius: 12px; padding: 20px; max-width: 400px; text-align: left; color: #fff; position: relative;">
-    <button type="button" onclick="document.getElementById('installModal').style.display='none'" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: #aaa; font-size: 24px; cursor: pointer;">✕</button>
-    <h3 style="margin-top:0; color:#f5c518;" id="modalTitle">Jak přidat aplikaci na plochu</h3>
-    <div id="modalBody" style="font-size:0.95em; line-height:1.5;"></div>
-    <button type="button" onclick="document.getElementById('installModal').style.display='none'" style="width:100%; margin-top:15px; background:#28a745; color:white; padding: 10px; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Rozumím</button>
-  </div>
-</div>
+var isStandalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+if (isStandalone && banner) {
+  banner.style.display = 'none';
+}
 
-<script>
-  var deferredPrompt;
-  var banner = document.getElementById('universal-banner');
-  var btn = document.getElementById('universal-btn');
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+});
 
-  var isStandalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  if (isStandalone && banner) {
-    banner.style.display = 'none';
-  }
+if (btn) {
+  btn.addEventListener('click', function() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+    var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
+    var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  window.addEventListener('beforeinstallprompt', function(e) {
-    e.preventDefault();
-    deferredPrompt = e;
-  });
-
-  if (btn) {
-    btn.addEventListener('click', function() {
-      var ua = navigator.userAgent || navigator.vendor || window.opera || '';
-      var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
-      var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-      if (isFB) {
-        document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku";
-        document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari / Chrome'</b>.</li><li>Následně stiskněte tlačítko Stáhnout znovu.</li></ol>";
-        document.getElementById('installModal').style.display = 'flex';
-        return;
-      }
-
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function(choiceResult) {
-          if (choiceResult.outcome === 'accepted' && banner) {
-            banner.style.display = 'none';
-          }
-          deferredPrompt = null;
-        });
-        return;
-      }
-
-      if (isiOS) {
-        document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
-        document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>Přidat na plochu ➕</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
-        document.getElementById('installModal').style.display = 'flex';
-        return;
-      }
-
-      document.getElementById('modalTitle').innerText = "Přidat na plochu";
-      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
+    if (isFB) {
+      document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari / Chrome'</b>.</li><li>Následně stiskněte tlačítko Stáhnout znovu.</li></ol>";
       document.getElementById('installModal').style.display = 'flex';
-    });
-  }
-
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(function(err) {
-      console.log('SW chyba:', err);
-    });
-  }
-</script>
-
-<!-- Načtení mapy a Firebase -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-<script>
-  // Inicializace mapy
-  const map = L.map('map').setView([50.355, 15.921], 16);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
-    authDomain: "taxi-f5229.firebaseapp.com",
-    databaseURL: "https://taxi-f5229-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "taxi-f5229",
-    storageBucket: "taxi-f5229.firebasestorage.app",
-    messagingSenderId: "159233844154",
-    appId: "1:159233844154:web:d876460899792fde5bf383"
-  };
-
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-  const db = firebase.database();
-
-  // Sledování stavu vozu VW Golf VII z databáze
-  db.ref('golf_active').on('value', (snapshot) => {
-    const active = snapshot.val();
-    const golfStatus = document.getElementById('golf-status');
-    const golfCard = document.getElementById('golf-card');
-
-    if (active === true) {
-      golfStatus.innerHTML = "<span style='color: #28a745;'>🟢 VW Golf VII – V PROVOZU</span>";
-      golfCard.style.borderColor = "#28a745";
-    } else {
-      golfStatus.innerHTML = "<span style='color: #dc3545;'>🔴 VW Golf VII – MIMO PROVOZ</span>";
-      golfCard.style.borderColor = "#dc3545";
-    }
-  });
-
-  function setGolfStatus(state) {
-    db.ref('golf_active').set(state);
-  }
-
-  // 3x Klik na hlavním nadpisu "Taxi Martin" -> Správa (PIN 1875)
-  let adminClicks = 0;
-  function toggleAdminPanel() {
-    adminClicks++;
-    if (adminClicks >= 3) {
-      const panel = document.getElementById('admin-panel');
-      if (panel.style.display !== 'block') {
-        const pin = prompt("Zadejte PIN správce:");
-        if (pin === "1875") {
-          panel.style.display = 'block';
-        } else if (pin !== null) {
-          alert("Nesprávný PIN správce!");
-        }
-      } else {
-        panel.style.display = 'none';
-      }
-      adminClicks = 0;
-    }
-    setTimeout(() => { adminClicks = 0; }, 2000);
-  }
-
-  // 3x Klik na název vozu "VW Golf VII" -> Přihlášení řidiče (PIN 11856)
-  let driverClicks = 0;
-  function toggleDriverPanel() {
-    driverClicks++;
-    if (driverClicks >= 3) {
-      const panel = document.getElementById('driver-gps-panel');
-      if (panel.style.display !== 'block') {
-        const pin = prompt("Zadejte PIN řidiče:");
-        if (pin === "11856") {
-          panel.style.display = 'block';
-        } else if (pin !== null) {
-          alert("Nesprávný PIN řidiče!");
-        }
-      } else {
-        panel.style.display = 'none';
-      }
-      driverClicks = 0;
-    }
-    setTimeout(() => { driverClicks = 0; }, 2000);
-  }
-
-  // Udržení běhu prohlížeče na pozadí
-  let wakeLock = null;
-  let audioLoop = null;
-
-  async function keepAppAlive() {
-    try {
-      if ('wakeLock' in navigator) {
-        wakeLock = await navigator.wakeLock.request('screen');
-      }
-    } catch (err) {
-      console.log('Wake Lock chyba:', err);
-    }
-
-    if (!audioLoop) {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      gain.gain.value = 0.001;
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-    }
-  }
-
-  function stopKeepAppAlive() {
-    if (wakeLock) {
-      wakeLock.release().then(() => { wakeLock = null; });
-    }
-  }
-
-  // Spuštění GPS vysílání
-  let watchPositionId = null;
-  function toggleGpsTracking() {
-    const statusDiv = document.getElementById('driver-live-status');
-    const btn = document.getElementById('btn-toggle-gps');
-
-    if (watchPositionId !== null) {
-      navigator.geolocation.clearWatch(watchPositionId);
-      watchPositionId = null;
-      stopKeepAppAlive();
-      statusDiv.innerText = "GPS vysílání vypnuto";
-      btn.innerText = "▶️ SPUSTIT JÍZDU (Vysílat GPS)";
-      btn.className = "btn-admin-on";
       return;
     }
 
-    if (!navigator.geolocation) {
-      alert("Tento telefon nepodporuje sledování GPS.");
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(choiceResult) {
+        if (choiceResult.outcome === 'accepted' && banner) {
+          banner.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
       return;
     }
 
-    statusDiv.innerText = "📡 Zapínám GPS vysílání...";
-    setGolfStatus(true);
-    keepAppAlive();
+    if (isiOS) {
+      document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>Přidat na plochu ➕</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
+      document.getElementById('installModal').style.display = 'flex';
+      return;
+    }
 
-    watchPositionId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const now = Date.now();
-
-        db.ref('driver').set({
-          lat: lat,
-          lng: lng,
-          timestamp: now
-        });
-
-        statusDiv.innerText = `🟢 VYSÍLÁM POLOHU: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        btn.innerText = "⏹️ UKONČIT JÍZDU (Vypnout GPS)";
-        btn.className = "btn-admin-off";
-      },
-      (err) => {
-        statusDiv.innerText = "❌ Chyba GPS: " + err.message;
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-      }
-    );
-  }
-
-  // Ikona červeného špendlíku 📍
-  const pinIcon = L.divIcon({
-    html: '<div id="pin-emoji" class="pin-marker" style="transition: transform 0.3s ease; transform-origin: center;">📍</div>',
-    className: '',
-    iconSize: [40, 40],
-    iconAnchor: [20, 38],
-    popupAnchor: [0, -38]
+    document.getElementById('modalTitle').innerText = "Přidat na plochu";
+    document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
+    document.getElementById('installModal').style.display = 'flex';
   });
+}
 
-  let taxiMarker = null;
-  let animId = null;
-
-  function calculateBearing(startLat, startLng, destLat, destLng) {
-    const startLatRad = startLat * (Math.PI / 180);
-    const startLngRad = startLng * (Math.PI / 180);
-    const destLatRad = destLat * (Math.PI / 180);
-    const destLngRad = destLng * (Math.PI / 180);
-
-    const y = Math.sin(destLngRad - startLngRad) * Math.cos(destLatRad);
-    const x = Math.cos(startLatRad) * Math.sin(destLatRad) -
-              Math.sin(startLatRad) * Math.cos(destLatRad) * Math.cos(destLngRad - startLngRad);
-
-    const brng = Math.atan2(y, x) * (180 / Math.PI);
-    return (brng + 360) % 360;
-  }
-
-  function animateMarker(marker, startPos, endPos, duration) {
-    if (animId) cancelAnimationFrame(animId);
-    const startTime = performance.now();
-
-    const angle = calculateBearing(startPos.lat, startPos.lng, endPos.lat, endPos.lng);
-
-    const pinEmoji = document.getElementById('pin-emoji');
-    if (pinEmoji) {
-      pinEmoji.style.transform = `rotate(${angle}deg)`;
-    }
-
-    function frame(now) {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      const lat = startPos.lat + (endPos.lat - startPos.lat) * progress;
-      const lng = startPos.lng + (endPos.lng - startPos.lng) * progress;
-
-      marker.setLatLng([lat, lng]);
-      map.panTo([lat, lng], { animate: false });
-
-      if (progress < 1) {
-        animId = requestAnimationFrame(frame);
-      }
-    }
-    animId = requestAnimationFrame(frame);
-  }
-
-  function getLatestLocation(rootObj) {
-    let latest = null;
-
-    function walk(node) {
-      if (!node || typeof node !== 'object') return;
-
-      let lat = node.lat !== undefined ? node.lat : node.latitude;
-      let lng = node.lon !== undefined ? node.lon : (node.lng !== undefined ? node.lng : node.longitude);
-
-      if (lat !== undefined && lng !== undefined) {
-        lat = parseFloat(lat);
-        lng = parseFloat(lng);
-        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-          let time = node.timestamp || node.tst || node.time || node.created_at || 0;
-          if (typeof time === 'number' && time < 10000000000) {
-            time = time * 1000;
-          }
-          if (!latest || time >= latest.time) {
-            latest = { lat, lng, time };
-          }
-        }
-      }
-
-      for (const key in node) {
-        if (typeof node[key] === 'object') {
-          walk(node[key]);
-        }
-      }
-    }
-
-    walk(rootObj);
-    return latest;
-  }
-
-  db.ref().on('value', (snapshot) => {
-    const rootData = snapshot.val();
-    const etaElement = document.getElementById('eta-time');
-
-    if (!rootData) return;
-
-    const loc = getLatestLocation(rootData);
-    if (!loc) return;
-
-    const newPos = { lat: loc.lat, lng: loc.lng };
-
-    if (!taxiMarker) {
-      taxiMarker = L.marker([loc.lat, loc.lng], { icon: pinIcon }).addTo(map).bindPopup("Taxi Martin");
-      map.setView([loc.lat, loc.lng], 16);
-    } else {
-      const startPos = taxiMarker.getLatLng();
-      if (Math.abs(startPos.lat - newPos.lat) > 0.000005 || Math.abs(startPos.lng - newPos.lng) > 0.000005) {
-        animateMarker(taxiMarker, startPos, newPos, 1500);
-      }
-    }
-
-    if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
-      calculateETA(loc.lat, loc.lng, userLat, userLng);
-    } else {
-      if (etaElement) etaElement.innerText = "V provozu 🟢";
-    }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function(err) {
+    console.log('SW chyba:', err);
   });
+}
 
-  async function calculateETA(driverLat, driverLng, destLat, destLng) {
-    try {
-      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${destLng},${destLat}?overview=false`);
-      const routeData = await res.json();
-      if (routeData.routes && routeData.routes[0]) {
-        const minutes = Math.ceil(routeData.routes[0].duration / 60);
-        const etaElement = document.getElementById('eta-time');
-        if (etaElement) {
-          etaElement.innerText = `${minutes} min`;
-        }
+/* FIREBASE A MAPOVÁ LOGIKA */
+const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
+  authDomain: "taxi-f5229.firebaseapp.com",
+  databaseURL: "https://taxi-f5229-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "taxi-f5229",
+  storageBucket: "taxi-f5229.firebasestorage.app",
+  messagingSenderId: "159233844154",
+  appId: "1:159233844154:web:d876460899792fde5bf383"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
+
+// Sledování stavu vozu
+db.ref('golf_active').on('value', (snapshot) => {
+  const active = snapshot.val();
+  const golfStatus = document.getElementById('golf-status');
+
+  if (active === true) {
+    golfStatus.innerHTML = "<span style='color: #28a745;'>🟢 V PROVOZU</span>";
+  } else {
+    golfStatus.innerHTML = "<span style='color: #dc3545;'>🔴 MIMO PROVOZ</span>";
+  }
+});
+
+function setGolfStatus(state) {
+  db.ref('golf_active').set(state);
+}
+
+// 3x Klik na hlavním nadpisu -> Správa (PIN 1875)
+let adminClicks = 0;
+function toggleAdminPanel() {
+  adminClicks++;
+  if (adminClicks >= 3) {
+    const panel = document.getElementById('admin-panel');
+    if (panel.style.display !== 'block') {
+      const pin = prompt("Zadejte PIN správce:");
+      if (pin === "1875") {
+        panel.style.display = 'block';
+      } else if (pin !== null) {
+        alert("Nesprávný PIN správce!");
       }
-    } catch (e) {
-      console.log("Chyba při výpočtu času:", e);
+    } else {
+      panel.style.display = 'none';
+    }
+    adminClicks = 0;
+  }
+  setTimeout(() => { adminClicks = 0; }, 2000);
+}
+
+// 3x Klik na auto -> Přihlášení řidiče (PIN 11856)
+let driverClicks = 0;
+function toggleDriverPanel() {
+  driverClicks++;
+  if (driverClicks >= 3) {
+    const panel = document.getElementById('driver-gps-panel');
+    if (panel.style.display !== 'block') {
+      const pin = prompt("Zadejte PIN řidiče:");
+      if (pin === "11856") {
+        panel.style.display = 'block';
+      } else if (pin !== null) {
+        alert("Nesprávný PIN řidiče!");
+      }
+    } else {
+      panel.style.display = 'none';
+    }
+    driverClicks = 0;
+  }
+  setTimeout(() => { driverClicks = 0; }, 2000);
+}
+
+// Udržení běhu na pozadí
+let wakeLock = null;
+let audioLoop = null;
+
+async function keepAppAlive() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (err) {
+    console.log('Wake Lock chyba:', err);
+  }
+
+  if (!audioLoop) {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.001;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+  }
+}
+
+function stopKeepAppAlive() {
+  if (wakeLock) {
+    wakeLock.release().then(() => { wakeLock = null; });
+  }
+}
+
+// GPS Vysílání
+let watchPositionId = null;
+function toggleGpsTracking() {
+  const statusDiv = document.getElementById('driver-live-status');
+  const btn = document.getElementById('btn-toggle-gps');
+
+  if (watchPositionId !== null) {
+    navigator.geolocation.clearWatch(watchPositionId);
+    watchPositionId = null;
+    stopKeepAppAlive();
+    statusDiv.innerText = "GPS vysílání vypnuto";
+    btn.innerText = "▶️ SPUSTIT JÍZDU (Vysílat GPS)";
+    btn.className = "btn-admin-on";
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    alert("Tento telefon nepodporuje sledování GPS.");
+    return;
+  }
+
+  statusDiv.innerText = "📡 Zapínám GPS vysílání...";
+  setGolfStatus(true);
+  keepAppAlive();
+
+  watchPositionId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const now = Date.now();
+
+      db.ref('driver').set({
+        lat: lat,
+        lng: lng,
+        timestamp: now
+      });
+
+      statusDiv.innerText = `🟢 VYSÍLÁM: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      btn.innerText = "⏹️ UKONČIT JÍZDU (Vypnout GPS)";
+      btn.className = "btn-admin-off";
+    },
+    (err) => {
+      statusDiv.innerText = "❌ Chyba GPS: " + err.message;
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    }
+  );
+}
+
+// Zobrazení pozice na mapě s animací
+const pinIcon = L.divIcon({
+  html: '<div id="pin-emoji" class="pin-marker" style="transition: transform 0.3s ease; transform-origin: center;">📍</div>',
+  className: '',
+  iconSize: [40, 40],
+  iconAnchor: [20, 38],
+  popupAnchor: [0, -38]
+});
+
+let taxiMarker = null;
+let animId = null;
+
+function calculateBearing(startLat, startLng, destLat, destLng) {
+  const startLatRad = startLat * (Math.PI / 180);
+  const startLngRad = startLng * (Math.PI / 180);
+  const destLatRad = destLat * (Math.PI / 180);
+  const destLngRad = destLng * (Math.PI / 180);
+
+  const y = Math.sin(destLngRad - startLngRad) * Math.cos(destLatRad);
+  const x = Math.cos(startLatRad) * Math.sin(destLatRad) -
+            Math.sin(startLatRad) * Math.cos(destLatRad) * Math.cos(destLngRad - startLngRad);
+
+  const brng = Math.atan2(y, x) * (180 / Math.PI);
+  return (brng + 360) % 360;
+}
+
+function animateMarker(marker, startPos, endPos, duration) {
+  if (animId) cancelAnimationFrame(animId);
+  const startTime = performance.now();
+
+  const angle = calculateBearing(startPos.lat, startPos.lng, endPos.lat, endPos.lng);
+
+  const pinEmoji = document.getElementById('pin-emoji');
+  if (pinEmoji) {
+    pinEmoji.style.transform = `rotate(${angle}deg)`;
+  }
+
+  function frame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    const lat = startPos.lat + (endPos.lat - startPos.lat) * progress;
+    const lng = startPos.lng + (endPos.lng - startPos.lng) * progress;
+
+    marker.setLatLng([lat, lng]);
+    map.panTo([lat, lng], { animate: false });
+
+    if (progress < 1) {
+      animId = requestAnimationFrame(frame);
     }
   }
+  animId = requestAnimationFrame(frame);
+}
+
+function getLatestLocation(rootObj) {
+  let latest = null;
+
+  function walk(node) {
+    if (!node || typeof node !== 'object') return;
+
+    let lat = node.lat !== undefined ? node.lat : node.latitude;
+    let lng = node.lon !== undefined ? node.lon : (node.lng !== undefined ? node.lng : node.longitude);
+
+    if (lat !== undefined && lng !== undefined) {
+      lat = parseFloat(lat);
+      lng = parseFloat(lng);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        let time = node.timestamp || node.tst || node.time || node.created_at || 0;
+        if (typeof time === 'number' && time < 10000000000) {
+          time = time * 1000;
+        }
+        if (!latest || time >= latest.time) {
+          latest = { lat, lng, time };
+        }
+      }
+    }
+
+    for (const key in node) {
+      if (typeof node[key] === 'object') {
+        walk(node[key]);
+      }
+    }
+  }
+
+  walk(rootObj);
+  return latest;
+}
+
+db.ref().on('value', (snapshot) => {
+  const rootData = snapshot.val();
+  const etaElement = document.getElementById('eta-time');
+
+  if (!rootData) return;
+
+  const loc = getLatestLocation(rootData);
+  if (!loc) return;
+
+  const newPos = { lat: loc.lat, lng: loc.lng };
+
+  if (!taxiMarker) {
+    taxiMarker = L.marker([loc.lat, loc.lng], { icon: pinIcon }).addTo(map).bindPopup("Taxi Martin");
+    map.setView([loc.lat, loc.lng], 15);
+  } else {
+    const startPos = taxiMarker.getLatLng();
+    if (Math.abs(startPos.lat - newPos.lat) > 0.000005 || Math.abs(startPos.lng - newPos.lng) > 0.000005) {
+      animateMarker(taxiMarker, startPos, newPos, 1500);
+    }
+  }
+
+  if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
+    calculateETA(loc.lat, loc.lng, userLat, userLng);
+  } else {
+    if (etaElement) etaElement.innerText = "OK";
+  }
+});
+
+async function calculateETA(driverLat, driverLng, destLat, destLng) {
+  try {
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${destLng},${destLat}?overview=false`);
+    const routeData = await res.json();
+    if (routeData.routes && routeData.routes[0]) {
+      const minutes = Math.ceil(routeData.routes[0].duration / 60);
+      const etaElement = document.getElementById('eta-time');
+      if (etaElement) {
+        etaElement.innerText = `${minutes} min`;
+      }
+    }
+  } catch (e) {
+    console.log("Chyba při výpočtu času:", e);
+  }
+}
 </script>
 </body>
 </html>
