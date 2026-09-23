@@ -118,9 +118,10 @@ button:hover {
   margin-top: 20px;
   text-align: center;
   border: 2px solid #444;
+  user-select: none;
 }
 
-/* Ovládací panel pro řidiče */
+/* Ovládací panel pro správu (PIN 1875) */
 #admin-panel {
   display: none;
   background: #1a1a1a;
@@ -129,6 +130,17 @@ button:hover {
   margin-top: 15px;
   border: 1px dashed #f5c518;
 }
+
+/* Nový panel pro živé vysílání řidiče (PIN 11856) */
+#driver-gps-panel {
+  display: none;
+  background: #142518;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 15px;
+  border: 1px dashed #28a745;
+}
+
 .btn-admin-on {
   background: #28a745;
   color: white;
@@ -145,25 +157,32 @@ button:hover {
 <body>
 
 <div class="wrap">
-  <!-- Trojklikem na nadpis se otevře ověření PINem pro správu -->
+  <!-- Trojklikem na nadpis se otevře ověření PINem (1875) pro správu -->
   <h1 onclick="toggleAdminPanel()">🚖 Taxi Martin</h1>
   <p>Rychlá a spolehlivá doprava</p>
   <a href="tel:777020281" class="btn-call">
     📞 Zavolat Taxi Martin<br>(777 020 281)
   </a>
 
-  <!-- Karta s informací o stavu VW Golf VII -->
-  <div id="golf-card" class="car-card">
-    <h3 style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.2em;">🚘 VW Golf VII</h3>
-    <div id="golf-status" style="font-size: 1.2em; font-weight: bold; color: #aaa;">
+  <!-- Karta s informací o stavu VW Golf VII (Trojklikem na kartu se otevře přihlášení řidiče s PINem 11856) -->
+  <div id="golf-card" class="car-card" onclick="toggleDriverGpsPanel()">
+    <h3 style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.2em; pointer-events: none;">🚘 VW Golf VII</h3>
+    <div id="golf-status" style="font-size: 1.2em; font-weight: bold; color: #aaa; pointer-events: none;">
       Načítám stav...
     </div>
 
-    <!-- Skryté ovládání po zadání PINu (1875) -->
-    <div id="admin-panel">
+    <!-- Původní skryté ovládání správce po zadání PINu (1875) -->
+    <div id="admin-panel" onclick="event.stopPropagation()">
       <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
       <button class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
       <button class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
+    </div>
+
+    <!-- NOVÉ: Přidané ovládací tlačítko pro řidiče (PIN 11856) -->
+    <div id="driver-gps-panel" onclick="event.stopPropagation()">
+      <p style="margin: 0 0 5px 0; font-size: 0.95em; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
+      <div id="driver-live-status" style="font-size: 0.85em; color: #ccc; margin-bottom: 10px;">GPS vysílání vypnuto</div>
+      <button id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶️ SPUSTIT JÍZDU (Vysílat GPS)</button>
     </div>
   </div>
 
@@ -364,6 +383,7 @@ function ziskatPolohu() {
     db.ref('golf_active').set(state);
   }
 
+  // PŮVODNÍ: Trojklik na nadpis + PIN 1875 pro nastavení stavu
   let clickCount = 0;
   function toggleAdminPanel() {
     clickCount++;
@@ -382,6 +402,78 @@ function ziskatPolohu() {
       clickCount = 0;
     }
     setTimeout(() => { clickCount = 0; }, 2000);
+  }
+
+  // NOVÉ: Trojklik na kartu vozu + PIN 11856 pro přihlášení řidiče
+  let driverClickCount = 0;
+  function toggleDriverGpsPanel() {
+    driverClickCount++;
+    if (driverClickCount >= 3) {
+      const panel = document.getElementById('driver-gps-panel');
+      if (panel.style.display !== 'block') {
+        const pin = prompt("Zadejte PIN ŘÍDIČE pro spuštění živého vysílání:");
+        if (pin === "11856") {
+          panel.style.display = 'block';
+        } else if (pin !== null) {
+          alert("Nesprávný PIN řidiče!");
+        }
+      } else {
+        panel.style.display = 'none';
+      }
+      driverClickCount = 0;
+    }
+    setTimeout(() => { driverClickCount = 0; }, 2000);
+  }
+
+  // NOVÉ: Spuštění odesílání živých GPS dat z mobilu řidiče
+  let watchPositionId = null;
+  function toggleGpsTracking() {
+    const statusDiv = document.getElementById('driver-live-status');
+    const btn = document.getElementById('btn-toggle-gps');
+
+    if (watchPositionId !== null) {
+      navigator.geolocation.clearWatch(watchPositionId);
+      watchPositionId = null;
+      statusDiv.innerText = "GPS vysílání vypnuto";
+      btn.innerText = "▶️ SPUSTIT JÍZDU (Vysílat GPS)";
+      btn.className = "btn-admin-on";
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      alert("Tento telefon nepodporuje sledování GPS.");
+      return;
+    }
+
+    statusDiv.innerText = "📡 Zapínám GPS vysílání...";
+    setGolfStatus(true); // Automaticky označí vůz v aplikaci jako V PROVOZU
+
+    watchPositionId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const now = Date.now();
+
+        // Odesílání polohy do Firebase
+        db.ref('driver').set({
+          lat: lat,
+          lng: lng,
+          timestamp: now
+        });
+
+        statusDiv.innerText = `🟢 VYSÍLÁM POLOHU: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        btn.innerText = "⏹️ UKONČIT JÍZDU (Vypnout GPS)";
+        btn.className = "btn-admin-off";
+      },
+      (err) => {
+        statusDiv.innerText = "❌ Chyba GPS: " + err.message;
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+      }
+    );
   }
 
   // Ikona autíčka podporující otáčení (Bolt styl)
