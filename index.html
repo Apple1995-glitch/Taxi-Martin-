@@ -358,12 +358,10 @@ function ziskatPolohu() {
     }
   });
 
-  // Funkce pro nastavení stavu vozu
   function setGolfStatus(state) {
     db.ref('golf_active').set(state);
   }
 
-  // Otevření skrytého ovládání (3x klepnutí na nadpis + PIN 1875)
   let clickCount = 0;
   function toggleAdminPanel() {
     clickCount++;
@@ -394,60 +392,60 @@ function ziskatPolohu() {
   });
 
   let taxiMarker = null;
-  let animationInterval = null;
+  let animId = null;
 
+  // Plynulá animace pomocí requestAnimationFrame (60 FPS)
   function animateMarker(marker, startPos, endPos, duration) {
-    if (animationInterval) clearInterval(animationInterval);
+    if (animId) cancelAnimationFrame(animId);
     const startTime = performance.now();
-    
-    animationInterval = setInterval(() => {
-      const elapsed = performance.now() - startTime;
+
+    function frame(now) {
+      const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
-      const currentLat = startPos.lat + (endPos.lat - startPos.lat) * progress;
-      const currentLng = startPos.lng + (endPos.lng - startPos.lng) * progress;
-      
-      marker.setLatLng([currentLat, currentLng]);
-      
-      if (progress >= 1) {
-        clearInterval(animationInterval);
+
+      const lat = startPos.lat + (endPos.lat - startPos.lat) * progress;
+      const lng = startPos.lng + (endPos.lng - startPos.lng) * progress;
+
+      marker.setLatLng([lat, lng]);
+
+      if (progress < 1) {
+        animId = requestAnimationFrame(frame);
       }
-    }, 16);
+    }
+    animId = requestAnimationFrame(frame);
   }
 
-  // Funkce pro nalezení souřadnic z Traccar/Firebase zápisu
-  function parseLocation(data) {
-    if (!data) return null;
-    
-    // 1. Přímý objekt s lat/lon
-    let lat = parseFloat(data.lat || data.latitude);
-    let lng = parseFloat(data.lon || data.lng || data.longitude);
+  // Univerzální vyhledávač souřadnic z jakékoliv struktury v Firebase
+  function parseLocation(obj) {
+    if (!obj) return null;
 
-    if (!isNaN(lat) && !isNaN(lng)) {
-      return { lat, lng };
+    let lat = obj.lat !== undefined ? obj.lat : (obj.latitude !== undefined ? obj.latitude : null);
+    let lng = obj.lon !== undefined ? obj.lon : (obj.lng !== undefined ? obj.lng : (obj.longitude !== undefined ? obj.longitude : null));
+
+    if (lat !== null && lng !== null) {
+      lat = Number(lat);
+      lng = Number(lng);
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        return { lat, lng };
+      }
     }
 
-    // 2. Traccar posílá pole [ { lat, lon, ... } ]
-    if (Array.isArray(data) && data.length > 0) {
-      const last = data[data.length - 1];
-      lat = parseFloat(last.lat || last.latitude);
-      lng = parseFloat(last.lon || last.lng || last.longitude);
-      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    if (Array.isArray(obj) && obj.length > 0) {
+      return parseLocation(obj[obj.length - 1]);
     }
 
-    // 3. Objekt s automatickými klíči od Firebase { "-NX...": { lat, lon } }
-    if (typeof data === 'object') {
-      const keys = Object.keys(data);
-      if (keys.length > 0) {
-        const lastKey = keys[keys.length - 1];
-        return parseLocation(data[lastKey]);
+    if (typeof obj === 'object') {
+      const keys = Object.keys(obj);
+      for (let i = keys.length - 1; i >= 0; i--) {
+        const found = parseLocation(obj[keys[i]]);
+        if (found) return found;
       }
     }
 
     return null;
   }
 
-  // Poslech změn přímo na uzlu 'driver'
+  // Sledování změn v Firebase v reálném čase
   db.ref('driver').on('value', (snapshot) => {
     const rawData = snapshot.val();
     const etaElement = document.getElementById('eta-time');
@@ -462,7 +460,9 @@ function ziskatPolohu() {
       map.setView([loc.lat, loc.lng], 15);
     } else {
       const startPos = taxiMarker.getLatLng();
-      animateMarker(taxiMarker, startPos, newPos, 2000);
+      if (Math.abs(startPos.lat - newPos.lat) > 0.00001 || Math.abs(startPos.lng - newPos.lng) > 0.00001) {
+        animateMarker(taxiMarker, startPos, newPos, 2000);
+      }
     }
 
     if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
