@@ -122,17 +122,6 @@ button:hover {
   border: 2px solid #444;
 }
 
-.btn-access {
-  background: #333;
-  color: #fff;
-  border: 1px solid #555;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.85em;
-  cursor: pointer;
-  margin: 5px;
-}
-
 /* Ovládací panel pro správu (PIN 1875) */
 #admin-panel {
   display: none;
@@ -169,7 +158,8 @@ button:hover {
 <body>
 
 <div class="wrap">
-  <h1>🚖 Taxi Martin</h1>
+  <!-- Trojklikem na nadpis se otevře ověření PINem pro Správu (1875) -->
+  <h1 onclick="toggleAdminPanel()">🚖 Taxi Martin</h1>
   <p>Rychlá a spolehlivá doprava</p>
   <a href="tel:777020281" class="btn-call">
     📞 Zavolat Taxi Martin<br>(777 020 281)
@@ -177,25 +167,20 @@ button:hover {
 
   <!-- Karta s informací o stavu VW Golf VII -->
   <div id="golf-card" class="car-card">
-    <h3 style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.2em;">🚘 VW Golf VII</h3>
-    <div id="golf-status" style="font-size: 1.2em; font-weight: bold; color: #aaa; margin-bottom: 10px;">
+    <!-- Trojklikem na název auta se otevře ovládání pro ŘIDIČE (11856) -->
+    <h3 onclick="toggleDriverPanel()" style="margin: 0 0 8px 0; color: #f5c518; font-size: 1.2em; cursor: pointer; user-select: none;">🚘 VW Golf VII</h3>
+    <div id="golf-status" style="font-size: 1.2em; font-weight: bold; color: #aaa;">
       Načítám stav...
     </div>
 
-    <!-- Viditelná tlačítka pro přihlášení -->
-    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
-      <button type="button" class="btn-access" onclick="openAdminPanel()">⚙️ Správa</button>
-      <button type="button" class="btn-access" style="border-color: #28a745; color: #28a745;" onclick="openDriverPanel()">🚕 Přihlášení řidiče</button>
-    </div>
-
-    <!-- Ovládání správce po zadání PINu (1875) -->
+    <!-- Skryté ovládání správce (PIN 1875 po 3x kliku na nadpis "Taxi Martin") -->
     <div id="admin-panel">
       <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
       <button type="button" class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
       <button type="button" class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
     </div>
 
-    <!-- Ovládací panel pro řidiče (PIN 11856) -->
+    <!-- Skryté ovládání řidiče (PIN 11856 po 3x kliku na nadpis "VW Golf VII") -->
     <div id="driver-gps-panel">
       <p style="margin: 0 0 5px 0; font-size: 0.95em; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
       <div id="driver-live-status" style="font-size: 0.85em; color: #ccc; margin-bottom: 10px;">GPS vysílání vypnuto</div>
@@ -400,34 +385,46 @@ function ziskatPolohu() {
     db.ref('golf_active').set(state);
   }
 
-  // Tlačítko Správa -> PIN 1875
-  function openAdminPanel() {
-    const panel = document.getElementById('admin-panel');
-    if (panel.style.display !== 'block') {
-      const pin = prompt("Zadejte PIN správce:");
-      if (pin === "1875") {
-        panel.style.display = 'block';
-      } else if (pin !== null) {
-        alert("Nesprávný PIN správce!");
+  // 3x Klik na hlavním nadpisu "Taxi Martin" -> Správa (PIN 1875)
+  let adminClicks = 0;
+  function toggleAdminPanel() {
+    adminClicks++;
+    if (adminClicks >= 3) {
+      const panel = document.getElementById('admin-panel');
+      if (panel.style.display !== 'block') {
+        const pin = prompt("Zadejte PIN správce:");
+        if (pin === "1875") {
+          panel.style.display = 'block';
+        } else if (pin !== null) {
+          alert("Nesprávný PIN správce!");
+        }
+      } else {
+        panel.style.display = 'none';
       }
-    } else {
-      panel.style.display = 'none';
+      adminClicks = 0;
     }
+    setTimeout(() => { adminClicks = 0; }, 2000);
   }
 
-  // Tlačítko Přihlášení řidiče -> PIN 11856
-  function openDriverPanel() {
-    const panel = document.getElementById('driver-gps-panel');
-    if (panel.style.display !== 'block') {
-      const pin = prompt("Zadejte PIN řidiče:");
-      if (pin === "11856") {
-        panel.style.display = 'block';
-      } else if (pin !== null) {
-        alert("Nesprávný PIN řidiče!");
+  // 3x Klik na název vozu "VW Golf VII" -> Přihlášení řidiče (PIN 11856)
+  let driverClicks = 0;
+  function toggleDriverPanel() {
+    driverClicks++;
+    if (driverClicks >= 3) {
+      const panel = document.getElementById('driver-gps-panel');
+      if (panel.style.display !== 'block') {
+        const pin = prompt("Zadejte PIN řidiče:");
+        if (pin === "11856") {
+          panel.style.display = 'block';
+        } else if (pin !== null) {
+          alert("Nesprávný PIN řidiče!");
+        }
+      } else {
+        panel.style.display = 'none';
       }
-    } else {
-      panel.style.display = 'none';
+      driverClicks = 0;
     }
+    setTimeout(() => { driverClicks = 0; }, 2000);
   }
 
   // Udržení běhu prohlížeče na pozadí
