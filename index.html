@@ -10,7 +10,7 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #111;
+  background: #000000;
   color: #fff;
   margin: 0;
   padding: 20px;
@@ -19,9 +19,10 @@ body {
 .wrap {
   max-width: 500px;
   margin: 0 auto;
-  background: #222;
+  background: #1c1c1c;
   padding: 20px;
   border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
 h1 {
   color: #f5c518;
@@ -62,7 +63,7 @@ input, select {
   padding: 12px;
   border-radius: 6px;
   border: 1px solid #444;
-  background: #333;
+  background: #2b2b2b;
   color: #fff;
   font-size: 1em;
   width: 100%;
@@ -394,7 +395,7 @@ function ziskatPolohu() {
   let taxiMarker = null;
   let animId = null;
 
-  // Plynulá animace pomocí requestAnimationFrame (60 FPS)
+  // Plynulá animace pohybu autíčka
   function animateMarker(marker, startPos, endPos, duration) {
     if (animId) cancelAnimationFrame(animId);
     const startTime = performance.now();
@@ -415,49 +416,38 @@ function ziskatPolohu() {
     animId = requestAnimationFrame(frame);
   }
 
-  // Univerzální vyhledávač souřadnic z jakékoliv struktury v Firebase
-  function parseLocation(obj) {
-    if (!obj) return null;
-
-    let lat = obj.lat !== undefined ? obj.lat : (obj.latitude !== undefined ? obj.latitude : null);
-    let lng = obj.lon !== undefined ? obj.lon : (obj.lng !== undefined ? obj.lng : (obj.longitude !== undefined ? obj.longitude : null));
-
-    if (lat !== null && lng !== null) {
-      lat = Number(lat);
-      lng = Number(lng);
-      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-        return { lat, lng };
-      }
-    }
-
-    if (Array.isArray(obj) && obj.length > 0) {
-      return parseLocation(obj[obj.length - 1]);
-    }
-
-    if (typeof obj === 'object') {
-      const keys = Object.keys(obj);
-      for (let i = keys.length - 1; i >= 0; i--) {
-        const found = parseLocation(obj[keys[i]]);
-        if (found) return found;
-      }
-    }
-
-    return null;
-  }
-
-  // Sledování změn v Firebase v reálném čase
+  // Sledování polohy přímo z uzlu 'driver'
   db.ref('driver').on('value', (snapshot) => {
-    const rawData = snapshot.val();
+    let data = snapshot.val();
     const etaElement = document.getElementById('eta-time');
 
-    const loc = parseLocation(rawData);
-    if (!loc) return;
+    if (!data) return;
 
-    const newPos = { lat: loc.lat, lng: loc.lng };
+    // Podpora pro přímé souřadnice i pro vnořené struktury
+    let lat = data.lat !== undefined ? data.lat : data.latitude;
+    let lng = data.lon !== undefined ? data.lon : (data.lng !== undefined ? data.lng : data.longitude);
+
+    if ((lat === undefined || lng === undefined) && typeof data === 'object') {
+      const keys = Object.keys(data);
+      if (keys.length > 0) {
+        const lastItem = data[keys[keys.length - 1]];
+        if (lastItem) {
+          lat = lastItem.lat !== undefined ? lastItem.lat : lastItem.latitude;
+          lng = lastItem.lon !== undefined ? lastItem.lon : (lastItem.lng !== undefined ? lastItem.lng : lastItem.longitude);
+        }
+      }
+    }
+
+    lat = parseFloat(lat);
+    lng = parseFloat(lng);
+
+    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+
+    const newPos = { lat, lng };
 
     if (!taxiMarker) {
-      taxiMarker = L.marker([loc.lat, loc.lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
-      map.setView([loc.lat, loc.lng], 15);
+      taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
+      map.setView([lat, lng], 15);
     } else {
       const startPos = taxiMarker.getLatLng();
       if (Math.abs(startPos.lat - newPos.lat) > 0.00001 || Math.abs(startPos.lng - newPos.lng) > 0.00001) {
@@ -466,9 +456,9 @@ function ziskatPolohu() {
     }
 
     if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
-      const bounds = L.latLngBounds([[loc.lat, loc.lng], [userLat, userLng]]);
+      const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
       map.fitBounds(bounds, { padding: [40, 40] });
-      calculateETA(loc.lat, loc.lng, userLat, userLng);
+      calculateETA(lat, lng, userLat, userLng);
     } else {
       if (etaElement) etaElement.innerText = "V provozu 🟢";
     }
