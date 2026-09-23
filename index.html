@@ -27,7 +27,7 @@ body, html {
   color: #fff;
 }
 
-/* Celoobrazovková mapa jako základ Uber UI */
+/* Celoobrazovková mapa */
 #map {
   position: absolute;
   top: 0;
@@ -46,7 +46,7 @@ body, html {
   z-index: 1000;
   background: rgba(26, 26, 26, 0.92);
   backdrop-filter: blur(12px);
-  padding: 12px 18px;
+  padding: 10px 16px;
   border-radius: 20px;
   display: flex;
   justify-content: space-between;
@@ -56,14 +56,11 @@ body, html {
 }
 
 .app-title {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: #f5c518;
   cursor: pointer;
   user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .btn-call-mini {
@@ -75,11 +72,6 @@ body, html {
   font-weight: 700;
   font-size: 0.85rem;
   box-shadow: 0 4px 12px rgba(40,167,69,0.3);
-  transition: transform 0.1s ease;
-}
-
-.btn-call-mini:active {
-  transform: scale(0.96);
 }
 
 /* Spodní výsuvný panel (Bottom Sheet) */
@@ -90,32 +82,46 @@ body, html {
   right: 0;
   z-index: 1000;
   background: #1c1c1e;
-  border-radius: 24px 24px 0 0;
-  padding: 16px 20px 25px 20px;
-  max-height: 75vh;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 18px 20px 18px;
+  max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.6);
   border-top: 1px solid rgba(255,255,255,0.1);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Třída pro schovaný panel - ukáže pouze horní kartu s autem */
+.bottom-sheet.collapsed {
+  transform: translateY(calc(100% - 78px));
+}
+
+.sheet-handle-zone {
+  width: 100%;
+  padding: 4px 0 8px 0;
+  cursor: pointer;
+  text-align: center;
 }
 
 .sheet-handle {
-  width: 40px;
-  height: 5px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 3px;
-  margin: 0 auto 15px auto;
+  width: 36px;
+  height: 4px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px;
+  margin: 0 auto;
 }
 
 /* Karta vozu - VW Golf VII */
 .car-preview {
   background: linear-gradient(135deg, #2a2a2e 0%, #222225 100%);
-  border-radius: 16px;
-  padding: 14px 16px;
-  margin-bottom: 15px;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
 }
 
 .car-info {
@@ -123,10 +129,9 @@ body, html {
 }
 
 .car-title {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 800;
   color: #f5c518;
-  cursor: pointer;
   user-select: none;
 }
 
@@ -134,58 +139,66 @@ body, html {
   display: inline-block;
   background: rgba(245, 197, 24, 0.15);
   color: #f5c518;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 6px;
-  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
 }
 
 .eta-badge {
   text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .eta-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #aaa;
 }
 
 .eta-time {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 800;
   color: #f5c518;
+}
+
+.toggle-icon {
+  font-size: 1rem;
+  color: #8e8e93;
+  transition: transform 0.3s ease;
+}
+
+.bottom-sheet.collapsed .toggle-icon {
+  transform: rotate(180deg);
 }
 
 /* Formulář objednávky */
 form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   text-align: left;
 }
 
-.input-group {
-  position: relative;
-}
-
 .input-group label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #8e8e93;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   display: block;
   font-weight: 600;
 }
 
 input {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 1px solid #3a3a3c;
   background: #2c2c2e;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   outline: none;
-  transition: border-color 0.2s;
 }
 
 input:focus {
@@ -197,52 +210,39 @@ input:focus {
   color: #28a745;
   border: 1px solid rgba(40, 167, 69, 0.4);
   font-weight: 700;
-  padding: 10px;
-  border-radius: 10px;
-  font-size: 0.85rem;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.8rem;
   cursor: pointer;
   width: 100%;
-  margin-top: 2px;
-  transition: background 0.2s;
-}
-
-.btn-location:active {
-  background: rgba(40, 167, 69, 0.3);
 }
 
 #gpsStatus {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #8e8e93;
   text-align: center;
-  margin-top: 2px;
 }
 
 .btn-submit {
   background: #f5c518;
   color: #000;
   font-weight: 800;
-  padding: 15px;
+  padding: 13px;
   border: none;
-  border-radius: 14px;
-  font-size: 1.05rem;
+  border-radius: 12px;
+  font-size: 1rem;
   cursor: pointer;
-  margin-top: 8px;
-  box-shadow: 0 4px 20px rgba(245, 197, 24, 0.25);
-  transition: transform 0.1s ease, background 0.2s;
-}
-
-.btn-submit:active {
-  transform: scale(0.98);
-  background: #e0b000;
+  margin-top: 6px;
+  box-shadow: 0 4px 15px rgba(245, 197, 24, 0.25);
 }
 
 /* PIN sekce - Správa a Řidič */
 #admin-panel, #driver-gps-panel {
   display: none;
   background: #121212;
-  padding: 14px;
-  border-radius: 12px;
-  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
 #admin-panel { border: 1px dashed #f5c518; }
@@ -252,11 +252,11 @@ input:focus {
   background: #28a745;
   color: white;
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: bold;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   cursor: pointer;
 }
 
@@ -264,9 +264,9 @@ input:focus {
   background: #dc3545;
   color: white;
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -285,7 +285,7 @@ input:focus {
 <!-- MAPA PŘES CELOU OBRAZOVKU -->
 <div id="map"></div>
 
-<!-- HORNÍ SVIŠTÍCÍ HLAVIČKA -->
+<!-- HORNÍ LIŠTA -->
 <div class="app-header">
   <div class="app-title" onclick="toggleAdminPanel()">
     🚖 Taxi Martin
@@ -295,33 +295,40 @@ input:focus {
   </a>
 </div>
 
-<!-- SPODNÍ UBER-STYLE PANEL -->
-<div class="bottom-sheet">
-  <div class="sheet-handle"></div>
+<!-- SPODNÍ SKLÁDACÍ PANEL -->
+<div class="bottom-sheet" id="bottomSheet">
+  
+  <!-- KLIKACÍ ZÓNA PRO SKLÁDÁNÍ / ROZBALENÍ PANELU -->
+  <div class="sheet-handle-zone" onclick="toggleSheet()">
+    <div class="sheet-handle"></div>
+  </div>
 
   <!-- KARTA VOZU -->
-  <div class="car-preview">
+  <div class="car-preview" onclick="toggleSheet()">
     <div class="car-info">
-      <div class="car-title" onclick="toggleDriverPanel()">🚘 VW Golf VII</div>
+      <div class="car-title" onclick="event.stopPropagation(); toggleDriverPanel();">🚘 VW Golf VII</div>
       <div class="car-badge">Prémiový vůz</div>
-      <div id="golf-status" style="font-size: 0.8rem; font-weight: bold; margin-top: 4px; color: #aaa;">Načítám stav...</div>
+      <div id="golf-status" style="font-size: 0.75rem; font-weight: bold; margin-top: 3px; color: #aaa;">Načítám stav...</div>
     </div>
     <div class="eta-badge">
-      <div class="eta-label">Příjezd za</div>
-      <div id="eta-time" class="eta-time">-- min</div>
+      <div>
+        <div class="eta-label">Příjezd za</div>
+        <div id="eta-time" class="eta-time">-- min</div>
+      </div>
+      <div class="toggle-icon">▼</div>
     </div>
   </div>
 
   <!-- SKRYTÉ PANELY PRO SPRÁVCE A ŘIDIČE -->
   <div id="admin-panel">
-    <p style="margin: 0 0 10px 0; font-size: 0.85rem; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
+    <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
     <button type="button" class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
     <button type="button" class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
   </div>
 
   <div id="driver-gps-panel">
-    <p style="margin: 0 0 5px 0; font-size: 0.85rem; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
-    <div id="driver-live-status" style="font-size: 0.8rem; color: #ccc; margin-bottom: 8px;">GPS vysílání vypnuto</div>
+    <p style="margin: 0 0 4px 0; font-size: 0.8rem; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
+    <div id="driver-live-status" style="font-size: 0.75rem; color: #ccc; margin-bottom: 6px;">GPS vysílání vypnuto</div>
     <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶️ SPUSTIT JÍZDU (Vysílat GPS)</button>
   </div>
 
@@ -388,6 +395,12 @@ input:focus {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
+/* Funkce pro skládání a rozbalení panelu */
+function toggleSheet() {
+  const sheet = document.getElementById('bottomSheet');
+  sheet.classList.toggle('collapsed');
+}
+
 let userLat = null;
 let userLng = null;
 
