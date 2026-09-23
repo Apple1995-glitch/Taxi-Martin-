@@ -324,7 +324,8 @@ function ziskatPolohu() {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
-  const map = L.map('map').setView([50.355, 15.921], 13);
+  // Inicializace mapy
+  const map = L.map('map').setView([50.355, 15.921], 16);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
@@ -383,9 +384,9 @@ function ziskatPolohu() {
     setTimeout(() => { clickCount = 0; }, 2000);
   }
 
-  // ŽLUTÝ TAXÍK 🚕
+  // Ikona autíčka podporující otáčení (Bolt styl)
   const taxiIcon = L.divIcon({
-    html: '<div class="car-marker">🚕</div>',
+    html: '<div id="car-emoji" class="car-marker" style="transition: transform 0.3s ease; transform-origin: center;">🚕</div>',
     className: '',
     iconSize: [40, 40],
     iconAnchor: [20, 20],
@@ -395,10 +396,32 @@ function ziskatPolohu() {
   let taxiMarker = null;
   let animId = null;
 
-  // Plynulá animace pohybu autíčka
+  // Výpočet úhlu pro natočení ikonky ve směru jízdy
+  function calculateBearing(startLat, startLng, destLat, destLng) {
+    const startLatRad = startLat * (Math.PI / 180);
+    const startLngRad = startLng * (Math.PI / 180);
+    const destLatRad = destLat * (Math.PI / 180);
+    const destLngRad = destLng * (Math.PI / 180);
+
+    const y = Math.sin(destLngRad - startLngRad) * Math.cos(destLatRad);
+    const x = Math.cos(startLatRad) * Math.sin(destLatRad) -
+              Math.sin(startLatRad) * Math.cos(destLatRad) * Math.cos(destLngRad - startLngRad);
+
+    const brng = Math.atan2(y, x) * (180 / Math.PI);
+    return (brng + 360) % 360;
+  }
+
+  // Plynulá animace pohybu autíčka i kamery
   function animateMarker(marker, startPos, endPos, duration) {
     if (animId) cancelAnimationFrame(animId);
     const startTime = performance.now();
+
+    // Natočí autíčko po směru jízdy
+    const angle = calculateBearing(startPos.lat, startPos.lng, endPos.lat, endPos.lng);
+    const carEmoji = document.getElementById('car-emoji');
+    if (carEmoji) {
+      carEmoji.style.transform = `rotate(${angle}deg)`;
+    }
 
     function frame(now) {
       const elapsed = now - startTime;
@@ -407,7 +430,11 @@ function ziskatPolohu() {
       const lat = startPos.lat + (endPos.lat - startPos.lat) * progress;
       const lng = startPos.lng + (endPos.lng - startPos.lng) * progress;
 
+      // Změna pozice autíčka
       marker.setLatLng([lat, lng]);
+
+      // Kamera plynule kombinuje posun auta
+      map.panTo([lat, lng], { animate: false });
 
       if (progress < 1) {
         animId = requestAnimationFrame(frame);
@@ -416,7 +443,7 @@ function ziskatPolohu() {
     animId = requestAnimationFrame(frame);
   }
 
-  // Funkce, která spolehlivě projde celou databázi a vybere nejnovější polohu
+  // Vyhledání nejnovější polohy v celé Firebase databázi
   function getLatestLocation(rootObj) {
     let latest = null;
 
@@ -430,10 +457,9 @@ function ziskatPolohu() {
         lat = parseFloat(lat);
         lng = parseFloat(lng);
         if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-          // Razítko času (Traccar posílá 'timestamp' nebo 'tst' nebo 'time')
           let time = node.timestamp || node.tst || node.time || node.created_at || 0;
           if (typeof time === 'number' && time < 10000000000) {
-            time = time * 1000; // převod sekund na milisekundy
+            time = time * 1000;
           }
           if (!latest || time >= latest.time) {
             latest = { lat, lng, time };
@@ -452,7 +478,7 @@ function ziskatPolohu() {
     return latest;
   }
 
-  // Sledování celé databáze – najde nejnovější zprávu poslanou z mobilu
+  // Příjem živých dat z Firebase
   db.ref().on('value', (snapshot) => {
     const rootData = snapshot.val();
     const etaElement = document.getElementById('eta-time');
@@ -466,17 +492,17 @@ function ziskatPolohu() {
 
     if (!taxiMarker) {
       taxiMarker = L.marker([loc.lat, loc.lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
-      map.setView([loc.lat, loc.lng], 15);
+      map.setView([loc.lat, loc.lng], 16);
     } else {
       const startPos = taxiMarker.getLatLng();
-      if (Math.abs(startPos.lat - newPos.lat) > 0.00001 || Math.abs(startPos.lng - newPos.lng) > 0.00001) {
-        animateMarker(taxiMarker, startPos, newPos, 2000);
+      // Pokud se souřadnice změní, autíčko plynule přejede
+      if (Math.abs(startPos.lat - newPos.lat) > 0.000005 || Math.abs(startPos.lng - newPos.lng) > 0.000005) {
+        animateMarker(taxiMarker, startPos, newPos, 1500);
       }
     }
 
+    // Výpočet zbývajícího času příjezdu
     if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
-      const bounds = L.latLngBounds([[loc.lat, loc.lng], [userLat, userLng]]);
-      map.fitBounds(bounds, { padding: [40, 40] });
       calculateETA(loc.lat, loc.lng, userLat, userLng);
     } else {
       if (etaElement) etaElement.innerText = "V provozu 🟢";
