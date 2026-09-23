@@ -350,6 +350,25 @@ input:focus {
   </a>
 </div>
 
+<!-- UNIVERZÁLNÍ INSTALAČNÍ BANNER PWA -->
+<div id="universal-banner" style="position: fixed; top: 70px; left: 15px; right: 15px; background: #28a745; color: white; padding: 10px 14px; border-radius: 14px; font-family: sans-serif; box-shadow: 0 6px 25px rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.2);">
+  <span style="font-size: 12px; font-weight: bold; padding-right: 8px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
+  <div style="display: flex; gap: 6px; align-items: center;">
+    <button type="button" id="universal-btn" style="background: white; color: #28a745; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">Stáhnout</button>
+    <button type="button" onclick="document.getElementById('universal-banner').style.display='none'" style="background: transparent; color: white; border: none; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0 4px;">✕</button>
+  </div>
+</div>
+
+<!-- MODAL NÁVODU PRO INSTALACI -->
+<div id="installModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: #222; border: 2px solid #f5c518; border-radius: 16px; padding: 20px; max-width: 400px; text-align: left; color: #fff; position: relative; width: 100%;">
+    <button type="button" onclick="document.getElementById('installModal').style.display='none'" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: #aaa; font-size: 24px; cursor: pointer;">✕</button>
+    <h3 style="margin-top:0; color:#f5c518;" id="modalTitle">Jak přidat aplikaci na plochu</h3>
+    <div id="modalBody" style="font-size:0.9em; line-height:1.5; margin-top: 10px;"></div>
+    <button type="button" onclick="document.getElementById('installModal').style.display='none'" style="width:100%; margin-top:15px; background:#28a745; color:white; padding: 12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">Rozumím</button>
+  </div>
+</div>
+
 <!-- SPODNÍ PANEL -->
 <div class="bottom-sheet" id="bottomSheet">
   
@@ -432,6 +451,71 @@ input:focus {
 <script>
 function toggleSheet() {
   document.getElementById('bottomSheet').classList.toggle('collapsed');
+}
+
+/* CHYTRÁ DETEKCE A LOGIKA PRO INSTALACI APLIKACE (PWA) */
+var deferredPrompt;
+var banner = document.getElementById('universal-banner');
+var btn = document.getElementById('universal-btn');
+
+var isStandalone = window.navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+if (isStandalone && banner) {
+  banner.style.display = 'none';
+}
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (banner && !isStandalone) {
+    banner.style.display = 'flex';
+  }
+});
+
+if (btn) {
+  btn.addEventListener('click', function() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+    var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
+    var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // 1. Detekce prohlížeče Facebook / Instagram
+    if (isFB) {
+      document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku / Instagramu";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari'</b> (nebo Chrome).</li><li>Poté stiskněte tlačítko Stáhnout znovu.</li></ol>";
+      document.getElementById('installModal').style.display = 'flex';
+      return;
+    }
+
+    // 2. Přímá instalace (Android Chrome)
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(choiceResult) {
+        if (choiceResult.outcome === 'accepted' && banner) {
+          banner.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
+      return;
+    }
+
+    // 3. Apple iPhone / iPad (Safari)
+    if (isiOS) {
+      document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>'Přidat na plochu ➕'</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
+      document.getElementById('installModal').style.display = 'flex';
+      return;
+    }
+
+    // 4. Android (ostatní prohlížeče / starší verze)
+    document.getElementById('modalTitle').innerText = "Přidat aplikaci na plochu";
+    document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
+    document.getElementById('installModal').style.display = 'flex';
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function(err) {
+    console.log('SW chyba:', err);
+  });
 }
 
 /* Uložení a načtení údajů zákazníka */
