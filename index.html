@@ -416,38 +416,57 @@ function ziskatPolohu() {
     animId = requestAnimationFrame(frame);
   }
 
-  // Sledování polohy přímo z uzlu 'driver'
-  db.ref('driver').on('value', (snapshot) => {
-    let data = snapshot.val();
-    const etaElement = document.getElementById('eta-time');
+  // Funkce, která spolehlivě projde celou databázi a vybere nejnovější polohu
+  function getLatestLocation(rootObj) {
+    let latest = null;
 
-    if (!data) return;
+    function walk(node) {
+      if (!node || typeof node !== 'object') return;
 
-    // Podpora pro přímé souřadnice i pro vnořené struktury
-    let lat = data.lat !== undefined ? data.lat : data.latitude;
-    let lng = data.lon !== undefined ? data.lon : (data.lng !== undefined ? data.lng : data.longitude);
+      let lat = node.lat !== undefined ? node.lat : node.latitude;
+      let lng = node.lon !== undefined ? node.lon : (node.lng !== undefined ? node.lng : node.longitude);
 
-    if ((lat === undefined || lng === undefined) && typeof data === 'object') {
-      const keys = Object.keys(data);
-      if (keys.length > 0) {
-        const lastItem = data[keys[keys.length - 1]];
-        if (lastItem) {
-          lat = lastItem.lat !== undefined ? lastItem.lat : lastItem.latitude;
-          lng = lastItem.lon !== undefined ? lastItem.lon : (lastItem.lng !== undefined ? lastItem.lng : lastItem.longitude);
+      if (lat !== undefined && lng !== undefined) {
+        lat = parseFloat(lat);
+        lng = parseFloat(lng);
+        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+          // Razítko času (Traccar posílá 'timestamp' nebo 'tst' nebo 'time')
+          let time = node.timestamp || node.tst || node.time || node.created_at || 0;
+          if (typeof time === 'number' && time < 10000000000) {
+            time = time * 1000; // převod sekund na milisekundy
+          }
+          if (!latest || time >= latest.time) {
+            latest = { lat, lng, time };
+          }
+        }
+      }
+
+      for (const key in node) {
+        if (typeof node[key] === 'object') {
+          walk(node[key]);
         }
       }
     }
 
-    lat = parseFloat(lat);
-    lng = parseFloat(lng);
+    walk(rootObj);
+    return latest;
+  }
 
-    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+  // Sledování celé databáze – najde nejnovější zprávu poslanou z mobilu
+  db.ref().on('value', (snapshot) => {
+    const rootData = snapshot.val();
+    const etaElement = document.getElementById('eta-time');
 
-    const newPos = { lat, lng };
+    if (!rootData) return;
+
+    const loc = getLatestLocation(rootData);
+    if (!loc) return;
+
+    const newPos = { lat: loc.lat, lng: loc.lng };
 
     if (!taxiMarker) {
-      taxiMarker = L.marker([lat, lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
-      map.setView([lat, lng], 15);
+      taxiMarker = L.marker([loc.lat, loc.lng], { icon: taxiIcon }).addTo(map).bindPopup("Taxi Martin");
+      map.setView([loc.lat, loc.lng], 15);
     } else {
       const startPos = taxiMarker.getLatLng();
       if (Math.abs(startPos.lat - newPos.lat) > 0.00001 || Math.abs(startPos.lng - newPos.lng) > 0.00001) {
@@ -456,9 +475,9 @@ function ziskatPolohu() {
     }
 
     if (typeof userLat !== 'undefined' && userLat !== null && typeof userLng !== 'undefined' && userLng !== null) {
-      const bounds = L.latLngBounds([[lat, lng], [userLat, userLng]]);
+      const bounds = L.latLngBounds([[loc.lat, loc.lng], [userLat, userLng]]);
       map.fitBounds(bounds, { padding: [40, 40] });
-      calculateETA(lat, lng, userLat, userLng);
+      calculateETA(loc.lat, loc.lng, userLat, userLng);
     } else {
       if (etaElement) etaElement.innerText = "V provozu 🟢";
     }
