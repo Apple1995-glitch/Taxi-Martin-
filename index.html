@@ -172,6 +172,11 @@ button:hover {
       <button class="btn-admin-on" onclick="startDriverTrackingWithPIN()">📡 ZAPNOUT SDÍLENÍ POLOHY</button>
       <button class="btn-admin-off" onclick="stopDriverTracking()">🛑 VYPNUT SDÍLENÍ POLOHY</button>
       <div id="driver-gps-status" style="margin-top: 8px; font-size: 0.85em; color: #aaa;">Vysílání polohy vypnuto.</div>
+
+      <hr style="border:0; border-top:1px dashed #555; margin: 15px 0;">
+      <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #f5c518; font-weight: bold;">📲 GPS Lokátor (Aplikace Traccar Client):</p>
+      <p style="font-size: 0.8em; color: #bbb; margin-bottom: 8px;">Pro sledování z externí GPS aplikace na pozadí v mobilu řidiče.</p>
+      <button class="btn-admin-on" onclick="enableTraccarMode()">📲 POVOLIT LOKÁTOR TRACCAR</button>
     </div>
   </div>
 
@@ -424,6 +429,15 @@ function ziskatPolohu() {
     document.getElementById('driver-gps-status').innerText = "🛑 Vysílání polohy bylo vypnuto.";
   }
 
+  function enableTraccarMode() {
+    const pin = prompt("Zadejte PIN pro aktivaci Traccar lokátoru:");
+    if (pin === "11356" || pin === "1875") {
+      alert("Lokátor Traccar je připraven. V aplikaci Traccar Client nastavte URL na adresu vaší Firebase databáze.");
+    } else if (pin !== null) {
+      alert("Nesprávný PIN!");
+    }
+  }
+
   let clickCount = 0;
   function toggleAdminPanel() {
     clickCount++;
@@ -488,7 +502,7 @@ function ziskatPolohu() {
       return;
     }
 
-    // Podpora pro přímé souřadnice i pro vnořené struktury
+    // Podpora pro přímé souřadnice i pro vnořené struktury (Traccar / Browser)
     let lat = data.lat !== undefined ? data.lat : data.latitude;
     let lng = data.lon !== undefined ? data.lon : (data.lng !== undefined ? data.lng : data.longitude);
 
