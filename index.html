@@ -290,7 +290,7 @@ input:focus {
   cursor: pointer;
 }
 
-/* --- NOVÝ VÝRAZNÝ MODEL AUTA S PULZUJÍCÍ ZÁŘÍ --- */
+/* VÝRAZNÁ IKONA TAXÍKU S PULZUJÍCÍ ZÁŘÍ */
 .taxi-marker-container {
   position: relative;
   width: 50px;
@@ -402,7 +402,7 @@ input:focus {
 
     <div class="input-group">
       <label for="from">MÍSTO VYZVEDNUTÍ (ODKUD)</label>
-      <input type="text" id="from" name="Odkud" placeholder="Ulice, město nebo klikněte do mapy" required>
+      <input type="text" id="from" name="Odkud" placeholder="Ulice, město nebo Hlavní nádraží" required>
     </div>
 
     <button type="button" class="btn-location" onclick="ziskatPolohu()">
@@ -434,7 +434,7 @@ function toggleSheet() {
   document.getElementById('bottomSheet').classList.toggle('collapsed');
 }
 
-/* Automatické uložení a načtení údajů zákazníka */
+/* Uložení a načtení údajů zákazníka */
 window.addEventListener('DOMContentLoaded', () => {
   if(localStorage.getItem('taxi_name')) document.getElementById('name').value = localStorage.getItem('taxi_name');
   if(localStorage.getItem('taxi_phone')) document.getElementById('phone').value = localStorage.getItem('taxi_phone');
@@ -448,6 +448,7 @@ function saveCustomerData() {
 let userLat = null;
 let userLng = null;
 
+/* Načtení polohy - generuje přímý odkaz na Google Maps */
 function ziskatPolohu() {
   const fromInput = document.getElementById("from");
   const gpsStatus = document.getElementById("gpsStatus");
@@ -462,7 +463,7 @@ function ziskatPolohu() {
     function(position) {
       userLat = position.coords.latitude;
       userLng = position.coords.longitude;
-      fromInput.value = `Poloha GPS (${userLat.toFixed(5)}, ${userLng.toFixed(5)})`;
+      fromInput.value = "https://www.google.com/maps?q=" + userLat + "," + userLng;
       gpsStatus.innerText = "✅ Poloha načtena.";
     },
     function(error) {
@@ -476,15 +477,6 @@ const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap'
 }).addTo(map);
-
-/* Kliknutí do mapy automaticky doplní cílovou adresu */
-map.on('click', function(e) {
-  const toInput = document.getElementById('to');
-  toInput.value = `Místo z mapy (${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)})`;
-  
-  // Pokud je formulář zasunutý, rozbalíme ho
-  document.getElementById('bottomSheet').classList.remove('collapsed');
-});
 
 const firebaseConfig = {
   apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
@@ -534,7 +526,7 @@ function toggleDriverPanel() {
   setTimeout(() => { driverClicks = 0; }, 2000);
 }
 
-/* NOVÁ PULZUJÍCÍ IKONA TAXÍKU */
+/* VÝRAZNÁ IKONA TAXÍKU */
 const taxiIconHtml = `
   <div class="taxi-marker-container">
     <div class="taxi-pulse"></div>
