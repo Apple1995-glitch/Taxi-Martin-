@@ -558,8 +558,12 @@ function ziskatPolohu() {
 
 /* LEAFLET & FIREBASE */
 const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
+
+/* OPRAVENÝ ZDROJ MAPY (SPOLEHLIVÝ CARTO VOYAGER) */
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 20
 }).addTo(map);
 
 const firebaseConfig = {
@@ -720,7 +724,47 @@ async function calculateETA(driverLat, driverLng, destLat, destLng) {
   } catch (e) {}
 }
 
-/* GPS VYSÍLÁNÍ ŘIDIČE */
+/* PODPORA BĚHU NA POZADÍ A PŘI ZAMČENÉ OBRAZOVCE */
+let wakeLock = null;
+let silentAudioCtx = null;
+
+function startBackgroundKeepAlive() {
+  // 1. Zabraňuje uspání procesoru (Wake Lock API)
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').then((wl) => {
+      wakeLock = wl;
+    }).catch((e) => console.log('Wake Lock chyba:', e));
+  }
+
+  // 2. Generuje tichý audio kanál, aby si mobil myslel, že běží PŘEHRÁVAČ HUDBY (zabraňuje vypnutí GPS)
+  try {
+    if (!silentAudioCtx) {
+      silentAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = silentAudioCtx.createOscillator();
+      const gain = silentAudioCtx.createGain();
+      gain.gain.value = 0.001; // Zcela neslyšitelné
+      osc.connect(gain);
+      gain.connect(silentAudioCtx.destination);
+      osc.start();
+    } else if (silentAudioCtx.state === 'suspended') {
+      silentAudioCtx.resume();
+    }
+  } catch (e) {
+    console.log('Audio KeepAlive chyba:', e);
+  }
+}
+
+function stopBackgroundKeepAlive() {
+  if (wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+  if (silentAudioCtx) {
+    silentAudioCtx.suspend().catch(() => {});
+  }
+}
+
+/* GPS VYSÍLÁNÍ ŘIDIČE (VYLEPŠENO PRO ZAMČENOU OBRAZOVKU) */
 let watchPositionId = null;
 function toggleGpsTracking() {
   const statusDiv = document.getElementById('driver-live-status');
@@ -729,6 +773,7 @@ function toggleGpsTracking() {
   if (watchPositionId !== null) {
     navigator.geolocation.clearWatch(watchPositionId);
     watchPositionId = null;
+    stopBackgroundKeepAlive();
     statusDiv.innerText = "GPS vysílání vypnuto";
     btn.innerText = "▶️ SPUSTIT JÍZDU (Vysílat GPS)";
     btn.className = "btn-admin-on";
@@ -736,15 +781,25 @@ function toggleGpsTracking() {
   }
 
   setGolfStatus(true);
+  startBackgroundKeepAlive();
+
   watchPositionId = navigator.geolocation.watchPosition(
     (pos) => {
-      db.ref('driver').set({ lat: pos.coords.latitude, lng: pos.coords.longitude, timestamp: Date.now() });
+      db.ref('driver').set({ 
+        lat: pos.coords.latitude, 
+        lng: pos.coords.longitude, 
+        timestamp: Date.now() 
+      });
       statusDiv.innerText = `🟢 VYSÍLÁM GPS...`;
       btn.innerText = "⏹️ UKONČIT JÍZDU";
       btn.className = "btn-admin-off";
     },
     (err) => { statusDiv.innerText = "❌ Chyba GPS: " + err.message; },
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+    { 
+      enableHighAccuracy: true, 
+      maximumAge: 0, 
+      timeout: 10000 
+    }
   );
 }
 </script>
