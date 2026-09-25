@@ -559,11 +559,10 @@ function ziskatPolohu() {
 /* LEAFLET & FIREBASE */
 const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
 
-/* OPRAVENÝ ZDROJ MAPY (SPOLEHLIVÝ CARTO VOYAGER) */
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  subdomains: 'abcd',
-  maxZoom: 20
+/* BEZPLATNÝ ZDROJ MAPY ESRI (BEZ API KLÍČE, FUNGUJE VŽDY) */
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), swisstopo, MapmyIndia, &copy; OpenStreetMap contributors',
+  maxZoom: 18
 }).addTo(map);
 
 const firebaseConfig = {
