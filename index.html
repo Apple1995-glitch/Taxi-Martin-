@@ -477,7 +477,6 @@ if (btn) {
     var isFB = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
     var isiOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    // 1. Detekce prohlížeče Facebook / Instagram
     if (isFB) {
       document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku / Instagramu";
       document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari'</b> (nebo Chrome).</li><li>Poté stiskněte tlačítko Stáhnout znovu.</li></ol>";
@@ -485,7 +484,6 @@ if (btn) {
       return;
     }
 
-    // 2. Přímá instalace (Android Chrome)
     if (deferredPrompt) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then(function(choiceResult) {
@@ -497,7 +495,6 @@ if (btn) {
       return;
     }
 
-    // 3. Apple iPhone / iPad (Safari)
     if (isiOS) {
       document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
       document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>'Přidat na plochu ➕'</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
@@ -505,7 +502,6 @@ if (btn) {
       return;
     }
 
-    // 4. Android (ostatní prohlížeče / starší verze)
     document.getElementById('modalTitle').innerText = "Přidat aplikaci na plochu";
     document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
     document.getElementById('installModal').style.display = 'flex';
@@ -532,7 +528,6 @@ function saveCustomerData() {
 let userLat = null;
 let userLng = null;
 
-/* Načtení polohys - generuje přímý odkaz na Google Maps */
 function ziskatPolohu() {
   const fromInput = document.getElementById("from");
   const gpsStatus = document.getElementById("gpsStatus");
@@ -552,16 +547,16 @@ function ziskatPolohu() {
     },
     function(error) {
       gpsStatus.innerText = "❌ Poloha nebyla načtena.";
-    }
+    },
+    { enableHighAccuracy: false, maximumAge: 60000 }
   );
 }
 
 /* LEAFLET & FIREBASE */
 const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
 
-/* BEZPLATNÝ ZDROJ MAPY ESRI (BEZ API KLÍČE, FUNGUJE VŽDY) */
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-  attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), swisstopo, MapmyIndia, &copy; OpenStreetMap contributors',
+  attribution: 'Tiles &copy; Esri',
   maxZoom: 18
 }).addTo(map);
 
@@ -728,20 +723,18 @@ let wakeLock = null;
 let silentAudioCtx = null;
 
 function startBackgroundKeepAlive() {
-  // 1. Zabraňuje uspání procesoru (Wake Lock API)
   if ('wakeLock' in navigator) {
     navigator.wakeLock.request('screen').then((wl) => {
       wakeLock = wl;
     }).catch((e) => console.log('Wake Lock chyba:', e));
   }
 
-  // 2. Generuje tichý audio kanál, aby si mobil myslel, že běží PŘEHRÁVAČ HUDBY (zabraňuje vypnutí GPS)
   try {
     if (!silentAudioCtx) {
       silentAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = silentAudioCtx.createOscillator();
       const gain = silentAudioCtx.createGain();
-      gain.gain.value = 0.001; // Zcela neslyšitelné
+      gain.gain.value = 0.001;
       osc.connect(gain);
       gain.connect(silentAudioCtx.destination);
       osc.start();
@@ -763,14 +756,26 @@ function stopBackgroundKeepAlive() {
   }
 }
 
-/* GPS VYSÍLÁNÍ ŘIDIČE (OPRAVENO PROTI CHYBĚ A PRO BĚH PŘI ZAMČENÉ OBRAZOVCE) */
+/* GPS VYSÍLÁNÍ ŘIDIČE Bez CHYBY TIMEOUT */
 let watchPositionId = null;
+
+function updateDriverFirebaseLocation(pos) {
+  db.ref('driver').set({ 
+    lat: pos.coords.latitude, 
+    lng: pos.coords.longitude, 
+    timestamp: Date.now() 
+  });
+  const statusDiv = document.getElementById('driver-live-status');
+  const btn = document.getElementById('btn-toggle-gps');
+  statusDiv.innerText = `🟢 VYSÍLÁM GPS...`;
+  btn.innerText = "⏹️ UKONČIT JÍZDU";
+  btn.className = "btn-admin-off";
+}
 
 function toggleGpsTracking() {
   const statusDiv = document.getElementById('driver-live-status');
   const btn = document.getElementById('btn-toggle-gps');
 
-  // Vypnutí GPS vysílání
   if (watchPositionId !== null) {
     navigator.geolocation.clearWatch(watchPositionId);
     watchPositionId = null;
@@ -782,7 +787,7 @@ function toggleGpsTracking() {
   }
 
   if (!navigator.geolocation) {
-    alert("Váš prohlížeč neobsahuje modul pro sledování GPS.");
+    alert("Váš telefon nepodporuje sledování GPS.");
     return;
   }
 
@@ -790,41 +795,26 @@ function toggleGpsTracking() {
   startBackgroundKeepAlive();
   statusDiv.innerText = "⏳ Připojuji GPS...";
 
-  function initWatch(highAccuracy) {
-    if (watchPositionId !== null) {
-      navigator.geolocation.clearWatch(watchPositionId);
+  // Okamžité načtení polohy
+  navigator.geolocation.getCurrentPosition(
+    (pos) => updateDriverFirebaseLocation(pos),
+    (err) => console.log("První načtení polohy:", err),
+    { enableHighAccuracy: false, maximumAge: 60000 }
+  );
+
+  // Sledování bez striktního časového limitu
+  watchPositionId = navigator.geolocation.watchPosition(
+    (pos) => {
+      updateDriverFirebaseLocation(pos);
+    },
+    (err) => {
+      console.warn("GPS varování:", err);
+    },
+    { 
+      enableHighAccuracy: false, 
+      maximumAge: 5000 
     }
-
-    watchPositionId = navigator.geolocation.watchPosition(
-      (pos) => {
-        db.ref('driver').set({ 
-          lat: pos.coords.latitude, 
-          lng: pos.coords.longitude, 
-          timestamp: Date.now() 
-        });
-        statusDiv.innerText = `🟢 VYSÍLÁM GPS...`;
-        btn.innerText = "⏹️ UKONČIT JÍZDU";
-        btn.className = "btn-admin-off";
-      },
-      (err) => {
-        console.warn("GPS chyba:", err);
-        // Pokud dojde k timeoutu, kód se zkusí přepnout na záložní síťové zaměření
-        if (err.code === err.TIMEOUT && highAccuracy) {
-          statusDiv.innerText = "⚠️ Vyhledávám záložní signál...";
-          initWatch(false);
-        } else {
-          statusDiv.innerText = "❌ Chyba GPS: " + err.message;
-        }
-      },
-      { 
-        enableHighAccuracy: highAccuracy, 
-        maximumAge: 10000, 
-        timeout: 30000 
-      }
-    );
-  }
-
-  initWatch(true);
+  );
 }
 </script>
 </body>
