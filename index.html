@@ -532,7 +532,7 @@ function saveCustomerData() {
 let userLat = null;
 let userLng = null;
 
-/* Načtení polohy - generuje přímý odkaz na Google Maps */
+/* Načtení polohys - generuje přímý odkaz na Google Maps */
 function ziskatPolohu() {
   const fromInput = document.getElementById("from");
   const gpsStatus = document.getElementById("gpsStatus");
@@ -763,12 +763,14 @@ function stopBackgroundKeepAlive() {
   }
 }
 
-/* GPS VYSÍLÁNÍ ŘIDIČE (VYLEPŠENO PRO ZAMČENOU OBRAZOVKU) */
+/* GPS VYSÍLÁNÍ ŘIDIČE (OPRAVENO PROTI CHYBĚ A PRO BĚH PŘI ZAMČENÉ OBRAZOVCE) */
 let watchPositionId = null;
+
 function toggleGpsTracking() {
   const statusDiv = document.getElementById('driver-live-status');
   const btn = document.getElementById('btn-toggle-gps');
 
+  // Vypnutí GPS vysílání
   if (watchPositionId !== null) {
     navigator.geolocation.clearWatch(watchPositionId);
     watchPositionId = null;
@@ -779,27 +781,50 @@ function toggleGpsTracking() {
     return;
   }
 
+  if (!navigator.geolocation) {
+    alert("Váš prohlížeč neobsahuje modul pro sledování GPS.");
+    return;
+  }
+
   setGolfStatus(true);
   startBackgroundKeepAlive();
+  statusDiv.innerText = "⏳ Připojuji GPS...";
 
-  watchPositionId = navigator.geolocation.watchPosition(
-    (pos) => {
-      db.ref('driver').set({ 
-        lat: pos.coords.latitude, 
-        lng: pos.coords.longitude, 
-        timestamp: Date.now() 
-      });
-      statusDiv.innerText = `🟢 VYSÍLÁM GPS...`;
-      btn.innerText = "⏹️ UKONČIT JÍZDU";
-      btn.className = "btn-admin-off";
-    },
-    (err) => { statusDiv.innerText = "❌ Chyba GPS: " + err.message; },
-    { 
-      enableHighAccuracy: true, 
-      maximumAge: 0, 
-      timeout: 10000 
+  function initWatch(highAccuracy) {
+    if (watchPositionId !== null) {
+      navigator.geolocation.clearWatch(watchPositionId);
     }
-  );
+
+    watchPositionId = navigator.geolocation.watchPosition(
+      (pos) => {
+        db.ref('driver').set({ 
+          lat: pos.coords.latitude, 
+          lng: pos.coords.longitude, 
+          timestamp: Date.now() 
+        });
+        statusDiv.innerText = `🟢 VYSÍLÁM GPS...`;
+        btn.innerText = "⏹️ UKONČIT JÍZDU";
+        btn.className = "btn-admin-off";
+      },
+      (err) => {
+        console.warn("GPS chyba:", err);
+        // Pokud dojde k timeoutu, kód se zkusí přepnout na záložní síťové zaměření
+        if (err.code === err.TIMEOUT && highAccuracy) {
+          statusDiv.innerText = "⚠️ Vyhledávám záložní signál...";
+          initWatch(false);
+        } else {
+          statusDiv.innerText = "❌ Chyba GPS: " + err.message;
+        }
+      },
+      { 
+        enableHighAccuracy: highAccuracy, 
+        maximumAge: 10000, 
+        timeout: 30000 
+      }
+    );
+  }
+
+  initWatch(true);
 }
 </script>
 </body>
