@@ -290,6 +290,24 @@ input:focus {
   cursor: pointer;
 }
 
+/* ALARM PANEL PRO ŘIDIČE */
+#driver-alarm-box {
+  display: none;
+  background: #dc3545;
+  color: white;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(220, 53, 69, 0.8);
+  animation: alarm-blink 0.8s infinite alternate;
+}
+
+@keyframes alarm-blink {
+  from { opacity: 1; }
+  to { opacity: 0.5; }
+}
+
 /* VÝRAZNÁ IKONA TAXÍKU S PULZUJÍCÍ ZÁŘÍ */
 .taxi-marker-container {
   position: relative;
@@ -376,6 +394,15 @@ input:focus {
     <div class="sheet-handle"></div>
   </div>
 
+  <!-- ALARM BOXX PRO ŘIDIČE (ZOBRAZÍ SE PŘI OBJEDNÁVCE) -->
+  <div id="driver-alarm-box">
+    <h3 style="margin-bottom: 5px;">🚨 NOVÁ OBJEDNÁVKA!</h3>
+    <p id="alarm-details" style="font-size: 0.9rem; margin-bottom: 10px;"></p>
+    <button type="button" onclick="stopDriverAlarm()" style="background: white; color: #dc3545; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem;">
+      🔕 POTVRDIT A VYPNOUT SI RÉNU
+    </button>
+  </div>
+
   <div class="car-preview" onclick="toggleSheet()">
     <div class="car-info" onclick="event.stopPropagation(); toggleDriverPanel();">
       <div class="car-title">🚘 VW Golf VII</div>
@@ -405,7 +432,7 @@ input:focus {
   </div>
 
   <!-- FORMULÁŘ OBJEDNÁVKY -->
-  <form id="taxiForm" action="https://formsubmit.co/jaroslavvachaonline@gmail.com" method="POST" onsubmit="saveCustomerData()">
+  <form id="taxiForm" action="https://formsubmit.co/jaroslavvachaonline@gmail.com" method="POST" onsubmit="handleFormSubmit()">
     <input type="hidden" name="_subject" value="Nová objednávka Taxi Martin!">
     <input type="hidden" name="_captcha" value="false">
 
@@ -533,7 +560,7 @@ function ziskatPolohu() {
   const gpsStatus = document.getElementById("gpsStatus");
 
   if (!navigator.geolocation) {
-    alert("Tento telefon nepodporuje zjištění polohy.");
+    alert("Tento telefon nepodporuje zjištění polohu.");
     return;
   }
 
@@ -581,6 +608,81 @@ db.ref('golf_active').on('value', (snapshot) => {
 
 function setGolfStatus(state) { db.ref('golf_active').set(state); }
 
+/* SYSTEM ALARMU PRO ŘIDIČE */
+let alarmInterval = null;
+let isDriverMode = false;
+
+function handleFormSubmit() {
+  saveCustomerData();
+  const orderData = {
+    name: document.getElementById('name').value,
+    phone: document.getElementById('phone').value,
+    from: document.getElementById('from').value,
+    to: document.getElementById('to').value,
+    time: document.getElementById('time').value,
+    timestamp: Date.now()
+  };
+  // Zápis objednávky přímo do Firebase
+  db.ref('latest_order').set(orderData);
+}
+
+// Sledování nových objednávek ve Firebase
+let lastOrderTime = Date.now();
+db.ref('latest_order').on('value', (snapshot) => {
+  const data = snapshot.val();
+  if (!data) return;
+
+  // Spustit alarm pouze u řidiče a jen na nové objednávky
+  if (isDriverMode && data.timestamp > lastOrderTime) {
+    lastOrderTime = data.timestamp;
+    startDriverAlarm(data);
+  }
+});
+
+function startDriverAlarm(data) {
+  document.getElementById('driver-alarm-box').style.display = 'block';
+  document.getElementById('alarm-details').innerText = `${data.name} (${data.phone})\nOdkud: ${data.from}\nKam: ${data.to}`;
+  
+  if (document.getElementById('bottomSheet').classList.contains('collapsed')) {
+    toggleSheet();
+  }
+
+  // Opakovaná hlučná siréna
+  if (!alarmInterval) {
+    alarmInterval = setInterval(() => {
+      playSirenSound();
+    }, 800);
+  }
+}
+
+function playSirenSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.4);
+
+    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  } catch (e) {}
+}
+
+function stopDriverAlarm() {
+  if (alarmInterval) {
+    clearInterval(alarmInterval);
+    alarmInterval = null;
+  }
+  document.getElementById('driver-alarm-box').style.display = 'none';
+}
+
 /* PIN KÓDY */
 let adminClicks = 0;
 function toggleAdminPanel() {
@@ -601,7 +703,10 @@ function toggleDriverPanel() {
   if (driverClicks >= 3) {
     const panel = document.getElementById('driver-gps-panel');
     if (panel.style.display !== 'block') {
-      if (prompt("Zadejte PIN řidiče:") === "118564702") panel.style.display = 'block';
+      if (prompt("Zadejte PIN řidiče:") === "118564702") {
+        panel.style.display = 'block';
+        isDriverMode = true; // Aktivuje poslech alarmu na tomto zařízení
+      }
     } else panel.style.display = 'none';
     driverClicks = 0;
   }
@@ -756,7 +861,7 @@ function stopBackgroundKeepAlive() {
   }
 }
 
-/* GPS VYSÍLÁNÍ ŘIDIČE Bez CHYBY TIMEOUT */
+/* GPS VYSÍLÁNÍ ŘIDIČE */
 let watchPositionId = null;
 
 function updateDriverFirebaseLocation(pos) {
@@ -795,14 +900,12 @@ function toggleGpsTracking() {
   startBackgroundKeepAlive();
   statusDiv.innerText = "⏳ Připojuji GPS...";
 
-  // Okamžité načtení polohy
   navigator.geolocation.getCurrentPosition(
     (pos) => updateDriverFirebaseLocation(pos),
     (err) => console.log("První načtení polohy:", err),
     { enableHighAccuracy: false, maximumAge: 60000 }
   );
 
-  // Sledování bez striktního časového limitu
   watchPositionId = navigator.geolocation.watchPosition(
     (pos) => {
       updateDriverFirebaseLocation(pos);
