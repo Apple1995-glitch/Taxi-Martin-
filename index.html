@@ -408,7 +408,7 @@ input:focus {
     <h3 style="margin-bottom: 5px;">🚨 NOVÁ OBJEDNÁVKA!</h3>
     <p id="alarm-details" style="font-size: 0.9rem; margin-bottom: 10px;"></p>
     <button type="button" onclick="stopDriverAlarm()" style="background: white; color: #dc3545; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem;">
-      🔕 POTVRDIT A VYPNOUT SI RÉNU
+      🔕 POTVRDIT A VYPNOUT SIRÉNU
     </button>
   </div>
 
@@ -485,7 +485,7 @@ input:focus {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
-/* ABSOLUTNÍ BLOKOVÁNÍ OBNOVENÍ STRÁNKY PŘI POTAŽENÍ DOLŮ */
+/* ABSOLUTNÍ A SPOLEHLIVÉ BLOKOVÁNÍ OBNOVENÍ STRÁNKY (PULL-TO-REFRESH) */
 let startY = 0;
 
 window.addEventListener('touchstart', function(e) {
@@ -497,16 +497,20 @@ window.addEventListener('touchstart', function(e) {
 window.addEventListener('touchmove', function(e) {
   const y = e.touches[0].clientY;
   const sheet = document.getElementById('bottomSheet');
+  const deltaY = y - startY;
 
-  // Pokud prst jede dolů (gesto obnovení)
-  if (y > startY) {
-    // Blokujeme obnovu pokud neposouváme vnitřní obsah spodního panelu
+  // Pokud uživatel táhne dolů více než 5px
+  if (deltaY > 5) {
+    // Blokujeme obnovu, pokud nejsme uvnitř rozrolovaného formuláře
     if (!sheet || !sheet.contains(e.target) || sheet.scrollTop <= 0) {
       if (e.cancelable) {
         e.preventDefault();
       }
     }
   }
+  
+  // Aktualizace souřadnice pro plynulé sledování pohybu
+  startY = y;
 }, { passive: false });
 
 function toggleSheet() {
@@ -698,7 +702,7 @@ function playSirenSound() {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(1046.50, ctx.currentTime); 
     
-    // Plynulý nástrp a doznívání zvuku během 0,8 s
+    // Plynulý nástup a doznívání zvuku během 0,8 s
     gain.gain.setValueAtTime(0.25, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
 
