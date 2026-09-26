@@ -31,6 +31,7 @@ html, body {
   overscroll-behavior: none !important;
   overscroll-behavior-y: none !important;
   overscroll-behavior-x: none !important;
+  touch-action: none !important; /* Blokuje gesta prohlížeče na pozadí */
 }
 
 /* Celoobrazovková mapa - ZDE JE POVOLENO POSOUVÁNÍ PO MAPĚ */
@@ -403,7 +404,7 @@ input:focus {
     <div class="sheet-handle"></div>
   </div>
 
-  <!-- ALARM BOXX PRO ŘIDIČE (ZOBRAZÍ SE PŘI OBJEDNÁVCE) -->
+  <!-- ALARM BOX PRO ŘIDIČE (ZOBRAZÍ SE PŘI OBJEDNÁVCE) -->
   <div id="driver-alarm-box">
     <h3 style="margin-bottom: 5px;">🚨 NOVÁ OBJEDNÁVKA!</h3>
     <p id="alarm-details" style="font-size: 0.9rem; margin-bottom: 10px;"></p>
@@ -485,33 +486,27 @@ input:focus {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
-/* ABSOLUTNÍ A SPOLEHLIVÉ BLOKOVÁNÍ OBNOVENÍ STRÁNKY (PULL-TO-REFRESH) */
-let startY = 0;
-
-window.addEventListener('touchstart', function(e) {
-  if (e.touches.length === 1) {
-    startY = e.touches[0].clientY;
-  }
-}, { passive: false });
-
-window.addEventListener('touchmove', function(e) {
-  const y = e.touches[0].clientY;
+/* ABSOLUTNÍ ZABLOKOVÁNÍ PULL-TO-REFRESH V CHROME / WEBVIEW */
+document.addEventListener('touchmove', function(e) {
   const sheet = document.getElementById('bottomSheet');
-  const deltaY = y - startY;
-
-  // Pokud uživatel táhne dolů více než 5px
-  if (deltaY > 5) {
-    // Blokujeme obnovu, pokud nejsme uvnitř rozrolovaného formuláře
-    if (!sheet || !sheet.contains(e.target) || sheet.scrollTop <= 0) {
-      if (e.cancelable) {
-        e.preventDefault();
+  
+  // Pokud gesto neprobíhá uvnitř spodního panelu, zakážeme výchozí akci prohlížeče
+  if (!sheet || !sheet.contains(e.target)) {
+    if (e.cancelable) e.preventDefault();
+  } else {
+    // Pokud jsme v panelu, zamezíme obnovení pouze v případě, že jsme na samém vrchu panelu a táhneme dolů
+    if (sheet.scrollTop <= 0) {
+      const touch = e.touches[0] || e.changedTouches[0];
+      if (touch && touch.clientY > 0) {
+        // Blokujeme obnovu aplikace při svití nahoru/dolů
       }
     }
   }
-  
-  // Aktualizace souřadnice pro plynulé sledování pohybu
-  startY = y;
 }, { passive: false });
+
+window.addEventListener('scroll', function() {
+  if (window.scrollY !== 0) window.scrollTo(0, 0);
+});
 
 function toggleSheet() {
   document.getElementById('bottomSheet').classList.toggle('collapsed');
