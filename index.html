@@ -482,6 +482,30 @@ input:focus {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
+/* BLOKOVÁNÍ PULL-TO-REFRESH (POTAŽENÍ DOLŮ) NA MOBILNÍCH TELEFONECH */
+let lastTouchY = 0;
+document.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) {
+    lastTouchY = e.touches[0].clientY;
+  }
+}, { passive: false });
+
+document.addEventListener('touchmove', function(e) {
+  const touchY = e.touches[0].clientY;
+  const touchYDelta = touchY - lastTouchY;
+  
+  // Pokud uživatel táhne prstem dolů na samém vrcholu stránky
+  if (touchYDelta > 0 && window.scrollY === 0) {
+    const sheet = document.getElementById('bottomSheet');
+    // Povolit skrolování uvnitř spodního panelu, pokud není na svém vrcholu
+    if (sheet && sheet.contains(e.target) && sheet.scrollTop > 0) {
+      return;
+    }
+    // Zablokovat obnovení stránky prohlížeče
+    e.preventDefault();
+  }
+}, { passive: false });
+
 function toggleSheet() {
   document.getElementById('bottomSheet').classList.toggle('collapsed');
 }
