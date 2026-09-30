@@ -10,15 +10,8 @@
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-<!-- EmailJS SDK -->
+<!-- EmailJS SDK v4 -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script type="text/javascript">
-   (function(){
-      emailjs.init({
-        publicKey: "WC8_QWRtyH5A19vaz",
-      });
-   })();
-</script>
 
 <style>
 * {
@@ -29,7 +22,6 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ZABLOKOVÁNÍ PULL-TO-REFRESH PŘI ZACHOVÁNÍ PLYNULOSTI */
 html, body {
   width: 100%;
   height: 100%;
@@ -41,7 +33,6 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* Celoobrazovková mapa */
 #map {
   position: absolute;
   top: 0;
@@ -52,7 +43,6 @@ html, body {
   touch-action: pan-x pan-y !important;
 }
 
-/* Tlačítko pro vycentrování mapy */
 .map-recenter-btn {
   position: absolute;
   right: 15px;
@@ -72,7 +62,6 @@ html, body {
   cursor: pointer;
 }
 
-/* Horní plovoucí lišta - OPRAVENO PROBLIKÁVÁNÍ PRO IPHONE */
 .app-header {
   position: absolute;
   top: 15px;
@@ -113,7 +102,6 @@ html, body {
   box-shadow: 0 4px 12px rgba(40,167,69,0.3);
 }
 
-/* Spodní výsuvný panel - OPRAVA POHYBU A VYKRESLOVÁNÍ PRO iOS */
 .bottom-sheet {
   position: absolute;
   bottom: 0;
@@ -155,7 +143,6 @@ html, body {
   margin: 0 auto;
 }
 
-/* Karta vozu */
 .car-preview {
   background: linear-gradient(135deg, #2a2a2e 0%, #222225 100%);
   border-radius: 14px;
@@ -218,7 +205,6 @@ html, body {
   transform: rotate(180deg);
 }
 
-/* Formulář - 16px PÍSMO ZAMEZUJE AUTOMATICKÉMU ZOOMU A BLIKÁNÍ SAFARI */
 form {
   display: flex;
   flex-direction: column;
@@ -280,7 +266,6 @@ input:focus {
   box-shadow: 0 4px 15px rgba(245, 197, 24, 0.25);
 }
 
-/* PIN sekce */
 #admin-panel, #driver-gps-panel {
   display: none;
   background: #121212;
@@ -315,7 +300,6 @@ input:focus {
   cursor: pointer;
 }
 
-/* ALARM PANEL PRO ŘIDIČE */
 #driver-alarm-box {
   display: none;
   background: #dc3545;
@@ -333,7 +317,6 @@ input:focus {
   to { opacity: 0.5; }
 }
 
-/* IKONA TAXÍKU */
 .taxi-marker-container {
   position: relative;
   width: 50px;
@@ -377,13 +360,10 @@ input:focus {
 </head>
 <body>
 
-<!-- MAPA -->
 <div id="map"></div>
 
-<!-- TLAČÍTKO VYCENTROVÁNÍ MAPY -->
 <div class="map-recenter-btn" onclick="centerMapOnDriver()" title="Vycentrovat na taxi">🎯</div>
 
-<!-- HORNÍ LIŠTA -->
 <div class="app-header">
   <div class="app-title" onclick="toggleAdminPanel()">
     🚖 Taxi Martin
@@ -393,7 +373,6 @@ input:focus {
   </a>
 </div>
 
-<!-- BANNER PRO PWA INSTALACI -->
 <div id="universal-banner" style="position: fixed; top: 70px; left: 15px; right: 15px; background: #28a745; color: white; padding: 10px 14px; border-radius: 14px; font-family: sans-serif; box-shadow: 0 6px 25px rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.2);">
   <span style="font-size: 12px; font-weight: bold; padding-right: 8px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
   <div style="display: flex; gap: 6px; align-items: center;">
@@ -402,7 +381,6 @@ input:focus {
   </div>
 </div>
 
-<!-- MODAL NÁVODU -->
 <div id="installModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
   <div style="background: #222; border: 2px solid #f5c518; border-radius: 16px; padding: 20px; max-width: 400px; text-align: left; color: #fff; position: relative; width: 100%;">
     <button type="button" onclick="document.getElementById('installModal').style.display='none'" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: #aaa; font-size: 24px; cursor: pointer;">✕</button>
@@ -412,14 +390,12 @@ input:focus {
   </div>
 </div>
 
-<!-- SPODNÍ PANEL -->
 <div class="bottom-sheet" id="bottomSheet">
   
   <div class="sheet-handle-zone" onclick="toggleSheet()">
     <div class="sheet-handle"></div>
   </div>
 
-  <!-- ALARM BOX PRO ŘIDIČE -->
   <div id="driver-alarm-box">
     <h3 style="margin-bottom: 5px;">🚨 NOVÁ OBJEDNÁVKA!</h3>
     <p id="alarm-details" style="font-size: 0.9rem; margin-bottom: 10px;"></p>
@@ -443,7 +419,6 @@ input:focus {
     </div>
   </div>
 
-  <!-- TAJNÉ PANELY -->
   <div id="admin-panel">
     <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #f5c518; font-weight: bold;">⚙ Nastavení stavu vozidla:</p>
     <button type="button" class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
@@ -456,7 +431,6 @@ input:focus {
     <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶ SPUSTIT JÍZDU (Vysílat GPS)</button>
   </div>
 
-  <!-- FORMULÁŘ -->
   <form id="taxiForm" onsubmit="handleFormSubmit(event)">
     <div class="input-group">
       <label for="name">JMÉNO A PŘÍJMENÍ</label>
@@ -492,7 +466,6 @@ input:focus {
   </form>
 </div>
 
-<!-- SCRIPTY -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -502,7 +475,6 @@ function toggleSheet() {
   document.getElementById('bottomSheet').classList.toggle('collapsed');
 }
 
-/* LOGIKA INSTALACE APLIKACE (PWA) */
 var deferredPrompt;
 var banner = document.getElementById('universal-banner');
 var btn = document.getElementById('universal-btn');
@@ -563,7 +535,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-/* Uložení a načtení údajů zákazníka */
 window.addEventListener('DOMContentLoaded', () => {
   if(localStorage.getItem('taxi_name')) document.getElementById('name').value = localStorage.getItem('taxi_name');
   if(localStorage.getItem('taxi_phone')) document.getElementById('phone').value = localStorage.getItem('taxi_phone');
@@ -601,7 +572,6 @@ function ziskatPolohu() {
   );
 }
 
-/* LEAFLET & FIREBASE */
 const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
 
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
@@ -630,11 +600,9 @@ db.ref('golf_active').on('value', (snapshot) => {
 
 function setGolfStatus(state) { db.ref('golf_active').set(state); }
 
-/* SYSTEM ALARMU PRO ŘIDIČE */
 let alarmInterval = null;
 let isDriverMode = false;
 
-/* FUNKCE PRO ODESLÁNÍ FORMULÁŘE PŘES EMAILJS */
 function handleFormSubmit(e) {
   if (e) e.preventDefault(); 
   saveCustomerData();
@@ -654,14 +622,12 @@ function handleFormSubmit(e) {
     timestamp: Date.now()
   };
 
-  // 1. ZÁPIS DO FIREBASE PRO ŘIDIČE
   db.ref('latest_order').set(orderData);
 
   const btnSubmit = document.getElementById('btnSubmitForm');
   btnSubmit.disabled = true;
   btnSubmit.innerText = "⏳ Odesílám...";
 
-  // 2. SPRÁVNÉ TEMPLATE ID (template_jdfiqqi)
   const templateParams = {
     jmeno: nameVal,
     telefon: phoneVal,
@@ -670,21 +636,21 @@ function handleFormSubmit(e) {
     cas_pristaveni: timeVal
   };
 
-  emailjs.send('service_pygrhbf', 'template_jdfiqqi', templateParams)
+  // Přímé předání klíče WC8_QWRtyH5A19vaz přímo do volání send
+  emailjs.send('service_pygrhbf', 'template_jdfiqqi', templateParams, 'WC8_QWRtyH5A19vaz')
     .then(function(response) {
       alert("✅ Objednávka byla úspěšně odeslána!");
       document.getElementById('to').value = '';
       btnSubmit.disabled = false;
       btnSubmit.innerText = "🚖 Potvrdit objednávku";
     }, function(error) {
-      alert("❌ Odeslání e-mailu selhalo: " + JSON.stringify(error));
+      alert("❌ Odeslání selhalo: " + JSON.stringify(error));
       console.log('EMAILJS FAILED...', error);
       btnSubmit.disabled = false;
       btnSubmit.innerText = "🚖 Potvrdit objednávku";
     });
 }
 
-// Sledování nových objednávek ve Firebase pro řidiče
 let lastOrderTime = Date.now();
 db.ref('latest_order').on('value', (snapshot) => {
   const data = snapshot.val();
@@ -741,7 +707,6 @@ function stopDriverAlarm() {
   document.getElementById('driver-alarm-box').style.display = 'none';
 }
 
-/* PIN KÓDY */
 let adminClicks = 0;
 function toggleAdminPanel() {
   adminClicks++;
@@ -771,7 +736,6 @@ function toggleDriverPanel() {
   setTimeout(() => { driverClicks = 0; }, 2000);
 }
 
-/* VÝRAZNÁ IKONA TAXÍKU */
 const taxiIconHtml = `
   <div class="taxi-marker-container">
     <div class="taxi-pulse"></div>
@@ -881,7 +845,6 @@ async function calculateETA(driverLat, driverLng, destLat, destLng) {
   } catch (e) {}
 }
 
-/* BEH NA POZADÍ */
 let wakeLock = null;
 let silentAudioCtx = null;
 
@@ -919,7 +882,6 @@ function stopBackgroundKeepAlive() {
   }
 }
 
-/* GPS VYSÍLÁNÍ ŘIDIČE */
 let watchPositionId = null;
 
 function updateDriverFirebaseLocation(pos) {
