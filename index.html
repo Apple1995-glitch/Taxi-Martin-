@@ -562,7 +562,7 @@ function ziskatPolohu() {
     function(position) {
       userLat = position.coords.latitude;
       userLng = position.coords.longitude;
-      fromInput.value = "https://www.google.com/maps?q=" + userLat + "," + userLng;
+      fromInput.value = "📍 Aktuální GPS: https://www.google.com/maps?q=" + userLat + "," + userLng;
       gpsStatus.innerText = "✅ Poloha načtena.";
     },
     function(error) {
@@ -603,7 +603,7 @@ function setGolfStatus(state) { db.ref('golf_active').set(state); }
 let alarmInterval = null;
 let isDriverMode = false;
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   if (e) e.preventDefault(); 
   saveCustomerData();
 
@@ -612,6 +612,10 @@ function handleFormSubmit(e) {
   const fromVal = document.getElementById('from').value;
   const toVal = document.getElementById('to').value;
   const timeVal = document.getElementById('time').value;
+
+  const btnSubmit = document.getElementById('btnSubmitForm');
+  btnSubmit.disabled = true;
+  btnSubmit.innerText = "⏳ Odesílám...";
 
   const orderData = {
     name: nameVal,
@@ -622,12 +626,6 @@ function handleFormSubmit(e) {
     timestamp: Date.now()
   };
 
-  db.ref('latest_order').set(orderData);
-
-  const btnSubmit = document.getElementById('btnSubmitForm');
-  btnSubmit.disabled = true;
-  btnSubmit.innerText = "⏳ Odesílám...";
-
   const templateParams = {
     jmeno: nameVal,
     telefon: phoneVal,
@@ -636,19 +634,24 @@ function handleFormSubmit(e) {
     cas_pristaveni: timeVal
   };
 
-  // Přímé předání klíče WC8_QWRtyH5A19vaz přímo do volání send
-  emailjs.send('service_pygrhbf', 'template_jdfiqqi', templateParams, 'WC8_QWRtyH5A19vaz')
-    .then(function(response) {
-      alert("✅ Objednávka byla úspěšně odeslána!");
-      document.getElementById('to').value = '';
-      btnSubmit.disabled = false;
-      btnSubmit.innerText = "🚖 Potvrdit objednávku";
-    }, function(error) {
-      alert("❌ Odeslání selhalo: " + JSON.stringify(error));
-      console.log('EMAILJS FAILED...', error);
-      btnSubmit.disabled = false;
-      btnSubmit.innerText = "🚖 Potvrdit objednávku";
-    });
+  try {
+    // 1. Odeslání do EmailJS (se správným Service ID 'service_pygrhbf' a Template ID 'template_rpq2vv8')
+    await emailjs.send('service_pygrhbf', 'template_rpq2vv8', templateParams, 'WC8_QWRtyH5A19vaz');
+
+    // 2. Uložení objednávky do Firebase (spustí řidičovskou sirénu)
+    db.ref('latest_order').set(orderData);
+    db.ref('orders').push(orderData);
+
+    alert("✅ Objednávka byla úspěšně odeslána!");
+    document.getElementById('to').value = '';
+
+  } catch (error) {
+    console.error('EmailJS chyba:', error);
+    alert("❌ Odeslání selhalo:\n" + (error.text || JSON.stringify(error)));
+  } finally {
+    btnSubmit.disabled = false;
+    btnSubmit.innerText = "🚖 Potvrdit objednávku";
+  }
 }
 
 let lastOrderTime = Date.now();
