@@ -29,19 +29,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* NATVRDO ZABLOKOVÁNÍ PULL-TO-REFRESH PRO CHROME ANDROID */
+/* ZABLOKOVÁNÍ PULL-TO-REFRESH PŘI ZACHOVÁNÍ PLYNULOSTI */
 html, body {
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden !important;
+  overflow: hidden;
   background: #121212;
   color: #fff;
-  overscroll-behavior: none !important;
-  overscroll-behavior-y: none !important;
-  overscroll-behavior-x: none !important;
-  touch-action: none !important;
+  overscroll-behavior: none;
 }
 
 /* Celoobrazovková mapa */
@@ -75,14 +72,15 @@ html, body {
   cursor: pointer;
 }
 
-/* Horní plovoucí lišta */
+/* Horní plovoucí lišta - OPRAVENO PROBLIKÁVÁNÍ PRO IPHONE */
 .app-header {
   position: absolute;
   top: 15px;
   left: 15px;
   right: 15px;
   z-index: 1000;
-  background: rgba(26, 26, 26, 0.92);
+  background: rgba(26, 26, 26, 0.95);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   padding: 10px 16px;
   border-radius: 20px;
@@ -91,6 +89,9 @@ html, body {
   align-items: center;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   border: 1px solid rgba(255,255,255,0.08);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .app-title {
@@ -112,7 +113,7 @@ html, body {
   box-shadow: 0 4px 12px rgba(40,167,69,0.3);
 }
 
-/* Spodní výsuvný panel */
+/* Spodní výsuvný panel - OPRAVA POHYBU A VYKRESLOVÁNÍ PRO iOS */
 .bottom-sheet {
   position: absolute;
   bottom: 0;
@@ -122,13 +123,17 @@ html, body {
   background: #1c1c1e;
   border-radius: 20px 20px 0 0;
   padding: 12px 18px 20px 18px;
-  max-height: 80vh;
-  overflow-y: auto;
+  max-height: 85vh;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 -8px 30px rgba(0,0,0,0.6);
   border-top: 1px solid rgba(255,255,255,0.1);
   transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-  overscroll-behavior: contain !important;
   touch-action: pan-y !important;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .bottom-sheet.collapsed {
@@ -213,7 +218,7 @@ html, body {
   transform: rotate(180deg);
 }
 
-/* Formulář */
+/* Formulář - 16px PÍSMO ZAMEZUJE AUTOMATICKÉMU ZOOMU A BLIKÁNÍ SAFARI */
 form {
   display: flex;
   flex-direction: column;
@@ -236,7 +241,7 @@ input {
   border: 1px solid #3a3a3c;
   background: #2c2c2e;
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 16px !important;
   outline: none;
 }
 
@@ -493,18 +498,6 @@ input:focus {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
-/* ABSOLUTNÍ ZABLOKOVÁNÍ PULL-TO-REFRESH */
-document.addEventListener('touchmove', function(e) {
-  const sheet = document.getElementById('bottomSheet');
-  if (!sheet || !sheet.contains(e.target)) {
-    if (e.cancelable) e.preventDefault();
-  }
-}, { passive: false });
-
-window.addEventListener('scroll', function() {
-  if (window.scrollY !== 0) window.scrollTo(0, 0);
-});
-
 function toggleSheet() {
   document.getElementById('bottomSheet').classList.toggle('collapsed');
 }
@@ -643,7 +636,7 @@ let isDriverMode = false;
 
 /* FUNKCE PRO ODESLÁNÍ FORMULÁŘE PŘES EMAILJS */
 function handleFormSubmit(e) {
-  if (e) e.preventDefault(); // Zamezí obnovení stránky
+  if (e) e.preventDefault(); 
   saveCustomerData();
 
   const nameVal = document.getElementById('name').value;
@@ -661,14 +654,14 @@ function handleFormSubmit(e) {
     timestamp: Date.now()
   };
 
-  // 1. IHNED ZÁPIS DO FIREBASE PRO ŘIDIČE (OKAMŽITÉ HOUKÁNÍ SIRÉNY)
+  // 1. ZÁPIS DO FIREBASE PRO ŘIDIČE
   db.ref('latest_order').set(orderData);
 
   const btnSubmit = document.getElementById('btnSubmitForm');
   btnSubmit.disabled = true;
   btnSubmit.innerText = "⏳ Odesílám...";
 
-  // 2. ODESLÁNÍ E-MAILU PŘES EMAILJS
+  // 2. PRESNE ODPOVÍDAJÍCÍ NÁZVY PRO EMAILJS ŠABLONU
   const templateParams = {
     jmeno: nameVal,
     telefon: phoneVal,
@@ -684,9 +677,8 @@ function handleFormSubmit(e) {
       btnSubmit.disabled = false;
       btnSubmit.innerText = "🚖 Potvrdit objednávku";
     }, function(error) {
-      alert("✅ Objednávka byla přijata!");
+      alert("❌ Odeslání e-mailu selhalo: " + JSON.stringify(error));
       console.log('EMAILJS FAILED...', error);
-      document.getElementById('to').value = '';
       btnSubmit.disabled = false;
       btnSubmit.innerText = "🚖 Potvrdit objednávku";
     });
