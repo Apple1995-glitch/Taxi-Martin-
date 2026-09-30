@@ -10,6 +10,16 @@
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
+<!-- EmailJS SDK -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init({
+        publicKey: "WC8_QWRtyH5A19vaz",
+      });
+   })();
+</script>
+
 <style>
 * {
   box-sizing: border-box;
@@ -441,7 +451,7 @@ input:focus {
     <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶ SPUSTIT JÍZDU (Vysílat GPS)</button>
   </div>
 
-  <!-- FORMULÁŘ BEZ PŘESMĚROVÁNÍ PROTI CHYBĚ 500 -->
+  <!-- FORMULÁŘ -->
   <form id="taxiForm" onsubmit="handleFormSubmit(event)">
     <div class="input-group">
       <label for="name">JMÉNO A PŘÍJMENÍ</label>
@@ -631,9 +641,9 @@ function setGolfStatus(state) { db.ref('golf_active').set(state); }
 let alarmInterval = null;
 let isDriverMode = false;
 
-/* FUNKCE PRO ODESLÁNÍ FORMULÁŘE (S OCHRANOU PROTI PŘESMĚROVÁNÍ) */
+/* FUNKCE PRO ODESLÁNÍ FORMULÁŘE PŘES EMAILJS */
 function handleFormSubmit(e) {
-  if (e) e.preventDefault(); // Nekompromisně zamezí přesměrování stránky
+  if (e) e.preventDefault(); // Zamezí obnovení stránky
   saveCustomerData();
 
   const nameVal = document.getElementById('name').value;
@@ -658,35 +668,28 @@ function handleFormSubmit(e) {
   btnSubmit.disabled = true;
   btnSubmit.innerText = "⏳ Odesílám...";
 
-  // 2. ODESLÁNÍ E-MAILU PŘES FETCH NA POZADÍ
-  const formData = new FormData();
-  formData.append('_subject', 'Nová objednávka Taxi Martin!');
-  formData.append('_captcha', 'false');
-  formData.append('Jmeno', nameVal);
-  formData.append('Telefon', phoneVal);
-  formData.append('Odkud', fromVal);
-  formData.append('Kam', toVal);
-  formData.append('Cas_pristaveni', timeVal);
+  // 2. ODESLÁNÍ E-MAILU PŘES EMAILJS
+  const templateParams = {
+    jmeno: nameVal,
+    telefon: phoneVal,
+    odkud: fromVal,
+    kam: toVal,
+    cas_pristaveni: timeVal
+  };
 
-  fetch("https://formsubmit.co/jaroslavvachaonline@gmail.com", {
-    method: "POST",
-    body: formData,
-    headers: {
-      'Accept': 'application/json'
-    }
-  })
-  .then(() => {
-    alert("✅ Objednávka byla úspěšně odeslána!");
-    document.getElementById('to').value = '';
-    btnSubmit.disabled = false;
-    btnSubmit.innerText = "🚖 Potvrdit objednávku";
-  })
-  .catch(() => {
-    alert("✅ Objednávka byla úspěšně přijata!");
-    document.getElementById('to').value = '';
-    btnSubmit.disabled = false;
-    btnSubmit.innerText = "🚖 Potvrdit objednávku";
-  });
+  emailjs.send('service_pygrhbf', 'template_contact', templateParams)
+    .then(function(response) {
+      alert("✅ Objednávka byla úspěšně odeslána!");
+      document.getElementById('to').value = '';
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = "🚖 Potvrdit objednávku";
+    }, function(error) {
+      alert("✅ Objednávka byla přijata!");
+      console.log('EMAILJS FAILED...', error);
+      document.getElementById('to').value = '';
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = "🚖 Potvrdit objednávku";
+    });
 }
 
 // Sledování nových objednávek ve Firebase pro řidiče
