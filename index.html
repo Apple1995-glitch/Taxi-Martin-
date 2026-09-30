@@ -661,7 +661,7 @@ function handleFormSubmit(e) {
   btnSubmit.disabled = true;
   btnSubmit.innerText = "⏳ Odesílám...";
 
-  // 2. PRESNE ODPOVÍDAJÍCÍ NÁZVY PRO EMAILJS ŠABLONU
+  // 2. SPRÁVNÉ TEMPLATE ID (template_jdfiqqi)
   const templateParams = {
     jmeno: nameVal,
     telefon: phoneVal,
@@ -670,7 +670,7 @@ function handleFormSubmit(e) {
     cas_pristaveni: timeVal
   };
 
-  emailjs.send('service_pygrhbf', 'template_contact', templateParams)
+  emailjs.send('service_pygrhbf', 'template_jdfiqqi', templateParams)
     .then(function(response) {
       alert("✅ Objednávka byla úspěšně odeslána!");
       document.getElementById('to').value = '';
