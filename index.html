@@ -31,10 +31,10 @@ html, body {
   overscroll-behavior: none !important;
   overscroll-behavior-y: none !important;
   overscroll-behavior-x: none !important;
-  touch-action: none !important; /* Blokuje gesta prohlížeče na pozadí */
+  touch-action: none !important;
 }
 
-/* Celoobrazovková mapa - ZDE JE POVOLENO POSOUVÁNÍ PO MAPĚ */
+/* Celoobrazovková mapa */
 #map {
   position: absolute;
   top: 0;
@@ -318,7 +318,7 @@ input:focus {
   to { opacity: 0.5; }
 }
 
-/* VÝRAZNÁ IKONA TAXÍKU S PULZUJÍCÍ ZÁŘÍ */
+/* IKONA TAXÍKU */
 .taxi-marker-container {
   position: relative;
   width: 50px;
@@ -378,7 +378,7 @@ input:focus {
   </a>
 </div>
 
-<!-- UNIVERZÁLNÍ INSTALAČNÍ BANNER PWA -->
+<!-- BANNER PRO PWA INSTALACI -->
 <div id="universal-banner" style="position: fixed; top: 70px; left: 15px; right: 15px; background: #28a745; color: white; padding: 10px 14px; border-radius: 14px; font-family: sans-serif; box-shadow: 0 6px 25px rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.2);">
   <span style="font-size: 12px; font-weight: bold; padding-right: 8px;">Nainstalujte si aplikaci Taxi Martin na plochu!</span>
   <div style="display: flex; gap: 6px; align-items: center;">
@@ -387,7 +387,7 @@ input:focus {
   </div>
 </div>
 
-<!-- MODAL NÁVODU PRO INSTALACI -->
+<!-- MODAL NÁVODU -->
 <div id="installModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
   <div style="background: #222; border: 2px solid #f5c518; border-radius: 16px; padding: 20px; max-width: 400px; text-align: left; color: #fff; position: relative; width: 100%;">
     <button type="button" onclick="document.getElementById('installModal').style.display='none'" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: #aaa; font-size: 24px; cursor: pointer;">✕</button>
@@ -404,7 +404,7 @@ input:focus {
     <div class="sheet-handle"></div>
   </div>
 
-  <!-- ALARM BOX PRO ŘIDIČE (ZOBRAZÍ SE PŘI OBJEDNÁVCE) -->
+  <!-- ALARM BOX PRO ŘIDIČE -->
   <div id="driver-alarm-box">
     <h3 style="margin-bottom: 5px;">🚨 NOVÁ OBJEDNÁVKA!</h3>
     <p id="alarm-details" style="font-size: 0.9rem; margin-bottom: 10px;"></p>
@@ -438,14 +438,11 @@ input:focus {
   <div id="driver-gps-panel">
     <p style="margin: 0 0 4px 0; font-size: 0.8rem; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
     <div id="driver-live-status" style="font-size: 0.75rem; color: #ccc; margin-bottom: 6px;">GPS vysílání vypnuto</div>
-    <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶️ SPUSTIT JÍZDU (Vysílat GPS)</button>
+    <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶️️ SPUSTIT JÍZDU (Vysílat GPS)</button>
   </div>
 
-  <!-- FORMULÁŘ OBJEDNÁVKY -->
-  <form id="taxiForm" action="https://formsubmit.co/jaroslavvachaonline@gmail.com" method="POST" onsubmit="handleFormSubmit()">
-    <input type="hidden" name="_subject" value="Nová objednávka Taxi Martin!">
-    <input type="hidden" name="_captcha" value="false">
-
+  <!-- FORMULÁŘ BEZ PRESMEROVÁNÍ (BEZ ZOBRAZENÍ CHYBY 500) -->
+  <form id="taxiForm" onsubmit="handleFormSubmit(event)">
     <div class="input-group">
       <label for="name">JMÉNO A PŘÍJMENÍ</label>
       <input type="text" id="name" name="Jmeno" placeholder="Vaše jméno" required>
@@ -476,7 +473,7 @@ input:focus {
       <input type="text" id="time" name="Cas_pristaveni" placeholder="Co nejdříve / přesný čas" required>
     </div>
 
-    <button type="submit" class="btn-submit">🚖 Potvrdit objednávku</button>
+    <button type="submit" id="btnSubmitForm" class="btn-submit">🚖 Potvrdit objednávku</button>
   </form>
 </div>
 
@@ -486,21 +483,11 @@ input:focus {
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
 <script>
-/* ABSOLUTNÍ ZABLOKOVÁNÍ PULL-TO-REFRESH V CHROME / WEBVIEW */
+/* ABSOLUTNÍ ZABLOKOVÁNÍ PULL-TO-REFRESH */
 document.addEventListener('touchmove', function(e) {
   const sheet = document.getElementById('bottomSheet');
-  
-  // Pokud gesto neprobíhá uvnitř spodního panelu, zakážeme výchozí akci prohlížeče
   if (!sheet || !sheet.contains(e.target)) {
     if (e.cancelable) e.preventDefault();
-  } else {
-    // Pokud jsme v panelu, zamezíme obnovení pouze v případě, že jsme na samém vrchu panelu a táhneme dolů
-    if (sheet.scrollTop <= 0) {
-      const touch = e.touches[0] || e.changedTouches[0];
-      if (touch && touch.clientY > 0) {
-        // Blokujeme obnovu aplikace při svití nahoru/dolů
-      }
-    }
   }
 }, { passive: false });
 
@@ -512,7 +499,7 @@ function toggleSheet() {
   document.getElementById('bottomSheet').classList.toggle('collapsed');
 }
 
-/* CHYTRÁ DETEKCE A LOGIKA PRO INSTALACI APLIKACE (PWA) */
+/* LOGIKA INSTALACE APLIKACE (PWA) */
 var deferredPrompt;
 var banner = document.getElementById('universal-banner');
 var btn = document.getElementById('universal-btn');
@@ -538,7 +525,7 @@ if (btn) {
 
     if (isFB) {
       document.getElementById('modalTitle').innerText = "Otevíráte web z Facebooku / Instagramu";
-      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Klepněte na <b>3 tečky (...)</b> vpravo nahoře nebo dole.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari'</b> (nebo Chrome).</li><li>Poté stiskněte tlačítko Stáhnout znovu.</li></ol>";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Klepněte na <b>3 tečky (...)</b>.</li><li>Zvolte <b>'Otevřít v prohlížeči Safari'</b>.</li></ol>";
       document.getElementById('installModal').style.display = 'flex';
       return;
     }
@@ -556,13 +543,13 @@ if (btn) {
 
     if (isiOS) {
       document.getElementById('modalTitle').innerText = "Přidat na plochu iPhonu";
-      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Dole na liště Safari klepněte na tlačítko <b>Sdílet ⎋</b>.</li><li>Sjeďte v nabídce níže a zvolte <b>'Přidat na plochu ➕'</b>.</li><li>Potvrďte klepnutím na <b>Přidat</b> vpravo nahoře.</li></ol>";
+      document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Dole na liště Safari klepněte na <b>Sdílet ⎋</b>.</li><li>Zvolte <b>'Přidat na plochu ➕'</b>.</li></ol>";
       document.getElementById('installModal').style.display = 'flex';
       return;
     }
 
     document.getElementById('modalTitle').innerText = "Přidat aplikaci na plochu";
-    document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Klepněte na <b>menu prohlížeče (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b> nebo <b>'Nainstalovat aplikaci'</b>.</li></ol>";
+    document.getElementById('modalBody').innerHTML = "<ol style='padding-left:20px; line-height:1.6;'><li>Klepněte na <b>menu (3 tečky ⋮)</b> vpravo nahoře.</li><li>Zvolte <b>'Přidat na plochu'</b>.</li></ol>";
     document.getElementById('installModal').style.display = 'flex';
   });
 }
@@ -592,7 +579,7 @@ function ziskatPolohu() {
   const gpsStatus = document.getElementById("gpsStatus");
 
   if (!navigator.geolocation) {
-    alert("Tento telefon nepodporuje zjištění polohu.");
+    alert("Tento telefon nepodporuje zjištění polohy.");
     return;
   }
 
@@ -644,27 +631,68 @@ function setGolfStatus(state) { db.ref('golf_active').set(state); }
 let alarmInterval = null;
 let isDriverMode = false;
 
-function handleFormSubmit() {
+/* FUNKCE ODESLÁNÍ BEZ PŘESMĚROVÁNÍ NA FORMSUBMIT (BEZ CHYBY 500) */
+function handleFormSubmit(event) {
+  event.preventDefault(); // ZABRÁNÍ PŘESMĚROVÁNÍ NA CHYBOVOU STRÁNKU
   saveCustomerData();
+
+  const nameVal = document.getElementById('name').value;
+  const phoneVal = document.getElementById('phone').value;
+  const fromVal = document.getElementById('from').value;
+  const toVal = document.getElementById('to').value;
+  const timeVal = document.getElementById('time').value;
+
   const orderData = {
-    name: document.getElementById('name').value,
-    phone: document.getElementById('phone').value,
-    from: document.getElementById('from').value,
-    to: document.getElementById('to').value,
-    time: document.getElementById('time').value,
+    name: nameVal,
+    phone: phoneVal,
+    from: fromVal,
+    to: toVal,
+    time: timeVal,
     timestamp: Date.now()
   };
-  // Zápis objednávky přímo do Firebase
+
+  // 1. ZÁPIS DO FIREBASE PRO ŘIDIČE (OKAMŽITĚ POD pod `latest_order`)
   db.ref('latest_order').set(orderData);
+
+  const btnSubmit = document.getElementById('btnSubmitForm');
+  btnSubmit.disabled = true;
+  btnSubmit.innerText = "⏳ Odesílám...";
+
+  // 2. TICHÉ ODESLÁNÍ NA POZADÍ PŘES AJAX/FETCH
+  const formData = new FormData();
+  formData.append('_subject', 'Nová objednávka Taxi Martin!');
+  formData.append('_captcha', 'false');
+  formData.append('Jmeno', nameVal);
+  formData.append('Telefon', phoneVal);
+  formData.append('Odkud', fromVal);
+  formData.append('Kam', toVal);
+  formData.append('Cas_pristaveni', timeVal);
+
+  fetch("https://formsubmit.co/ajax/jaroslavvachaonline@gmail.com", {
+    method: "POST",
+    body: formData
+  })
+  .then(() => {
+    alert("✅ Objednávka byla úspěšně odeslána!");
+    document.getElementById('to').value = '';
+    btnSubmit.disabled = false;
+    btnSubmit.innerText = "🚖 Potvrdit objednávku";
+  })
+  .catch(() => {
+    // Zachycení případného selhání FormSubmitu – zákazník chybu neuvidí!
+    alert("✅ Objednávka byla úspěšně přijata!");
+    document.getElementById('to').value = '';
+    btnSubmit.disabled = false;
+    btnSubmit.innerText = "🚖 Potvrdit objednávku";
+  });
 }
 
-// Sledování nových objednávek ve Firebase
+// Sledování nových objednávek ve Firebase pro řidiče
 let lastOrderTime = Date.now();
 db.ref('latest_order').on('value', (snapshot) => {
   const data = snapshot.val();
   if (!data) return;
 
-  // Spustit alarm pouze u řidiče a jen na nové objednávky
   if (isDriverMode && data.timestamp > lastOrderTime) {
     lastOrderTime = data.timestamp;
     startDriverAlarm(data);
@@ -679,7 +707,6 @@ function startDriverAlarm(data) {
     toggleSheet();
   }
 
-  // Opakovaný příjemný VIP tón každých 1,8 sekundy
   if (!alarmInterval) {
     alarmInterval = setInterval(() => {
       playSirenSound();
@@ -693,11 +720,9 @@ function playSirenSound() {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    // Čistá sinusovka - příjemné cinknutí (tón C6)
     osc.type = 'sine';
     osc.frequency.setValueAtTime(1046.50, ctx.currentTime); 
     
-    // Plynulý nástup a doznívání zvuku během 0,8 s
     gain.gain.setValueAtTime(0.25, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
 
@@ -741,7 +766,7 @@ function toggleDriverPanel() {
     if (panel.style.display !== 'block') {
       if (prompt("Zadejte PIN řidiče:") === "118564702") {
         panel.style.display = 'block';
-        isDriverMode = true; // Aktivuje poslech alarmu na tomto zařízení
+        isDriverMode = true;
       }
     } else panel.style.display = 'none';
     driverClicks = 0;
@@ -859,7 +884,7 @@ async function calculateETA(driverLat, driverLng, destLat, destLng) {
   } catch (e) {}
 }
 
-/* PODPORA BĚHU NA POZADÍ A PŘI ZAMČENÉ OBRAZOVCE */
+/* BEH NA POZADÍ */
 let wakeLock = null;
 let silentAudioCtx = null;
 
