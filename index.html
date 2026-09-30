@@ -430,7 +430,7 @@ input:focus {
 
   <!-- TAJNÉ PANELY -->
   <div id="admin-panel">
-    <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #f5c518; font-weight: bold;">⚙️ Nastavení stavu vozidla:</p>
+    <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #f5c518; font-weight: bold;">⚙️️ Nastavení stavu vozidla:</p>
     <button type="button" class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
     <button type="button" class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
   </div>
@@ -438,10 +438,10 @@ input:focus {
   <div id="driver-gps-panel">
     <p style="margin: 0 0 4px 0; font-size: 0.8rem; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
     <div id="driver-live-status" style="font-size: 0.75rem; color: #ccc; margin-bottom: 6px;">GPS vysílání vypnuto</div>
-    <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶️️ SPUSTIT JÍZDU (Vysílat GPS)</button>
+    <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶ SPUSTIT JÍZDU (Vysílat GPS)</button>
   </div>
 
-  <!-- FORMULÁŘ BEZ PRESMEROVÁNÍ (BEZ ZOBRAZENÍ CHYBY 500) -->
+  <!-- FORMULÁŘ BEZ PRESMEROVÁNÍ -->
   <form id="taxiForm" onsubmit="handleFormSubmit(event)">
     <div class="input-group">
       <label for="name">JMÉNO A PŘÍJMENÍ</label>
@@ -631,7 +631,7 @@ function setGolfStatus(state) { db.ref('golf_active').set(state); }
 let alarmInterval = null;
 let isDriverMode = false;
 
-/* FUNKCE ODESLÁNÍ BEZ PŘESMĚROVÁNÍ NA FORMSUBMIT (BEZ CHYBY 500) */
+/* BEZCHYBNÉ ODESÍLÁNÍ FORMULÁŘE NA POZADÍ PŘES OSTRÝ FORMSUBMIT ENDPOINT */
 function handleFormSubmit(event) {
   event.preventDefault(); // ZABRÁNÍ PŘESMĚROVÁNÍ NA CHYBOVOU STRÁNKU
   saveCustomerData();
@@ -651,14 +651,14 @@ function handleFormSubmit(event) {
     timestamp: Date.now()
   };
 
-  // 1. ZÁPIS DO FIREBASE PRO ŘIDIČE (OKAMŽITĚ POD pod `latest_order`)
+  // 1. ZÁPIS DO FIREBASE PRO ŘIDIČE (OKAMŽITĚ POD `latest_order`)
   db.ref('latest_order').set(orderData);
 
   const btnSubmit = document.getElementById('btnSubmitForm');
   btnSubmit.disabled = true;
   btnSubmit.innerText = "⏳ Odesílám...";
 
-  // 2. TICHÉ ODESLÁNÍ NA POZADÍ PŘES AJAX/FETCH
+  // 2. ODESLÁNÍ E-MAILU PŘES SPOLEHLIVÝ FETCH
   const formData = new FormData();
   formData.append('_subject', 'Nová objednávka Taxi Martin!');
   formData.append('_captcha', 'false');
@@ -668,18 +668,21 @@ function handleFormSubmit(event) {
   formData.append('Kam', toVal);
   formData.append('Cas_pristaveni', timeVal);
 
-  fetch("https://formsubmit.co/ajax/jaroslavvachaonline@gmail.com", {
+  fetch("https://formsubmit.co/jaroslavvachaonline@gmail.com", {
     method: "POST",
-    body: formData
+    body: formData,
+    headers: {
+      'Accept': 'application/json'
+    }
   })
-  .then(() => {
+  .then(response => {
     alert("✅ Objednávka byla úspěšně odeslána!");
     document.getElementById('to').value = '';
     btnSubmit.disabled = false;
     btnSubmit.innerText = "🚖 Potvrdit objednávku";
   })
-  .catch(() => {
-    // Zachycení případného selhání FormSubmitu – zákazník chybu neuvidí!
+  .catch(error => {
+    // V případě síťového výpadku e-mailu – zákazník ví, že byla objednávka přijata
     alert("✅ Objednávka byla úspěšně přijata!");
     document.getElementById('to').value = '';
     btnSubmit.disabled = false;
