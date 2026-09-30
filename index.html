@@ -635,8 +635,8 @@ async function handleFormSubmit(e) {
   };
 
   try {
-    // 1. Odeslání do EmailJS (se správným Service ID 'service_pygrhbf' a Template ID 'template_rpq2vv8')
-    await emailjs.send('service_pygrhbf', 'template_rpq2vv8', templateParams, 'WC8_QWRtyH5A19vaz');
+    // 1. Odeslání do EmailJS se SPRÁVNÝM Template ID z administrace: template_jdfiqqi
+    await emailjs.send('service_pygrhbf', 'template_jdfiqqi', templateParams, 'WC8_QWRtyH5A19vaz');
 
     // 2. Uložení objednávky do Firebase (spustí řidičovskou sirénu)
     db.ref('latest_order').set(orderData);
