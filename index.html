@@ -430,7 +430,7 @@ input:focus {
 
   <!-- TAJNÉ PANELY -->
   <div id="admin-panel">
-    <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #f5c518; font-weight: bold;">⚙️️ Nastavení stavu vozidla:</p>
+    <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #f5c518; font-weight: bold;">⚙ Nastavení stavu vozidla:</p>
     <button type="button" class="btn-admin-on" onclick="setGolfStatus(true)">🟢 ZAPNOUT (V provozu)</button>
     <button type="button" class="btn-admin-off" onclick="setGolfStatus(false)">🔴 VYPNOUT (Mimo provoz)</button>
   </div>
@@ -441,7 +441,7 @@ input:focus {
     <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶ SPUSTIT JÍZDU (Vysílat GPS)</button>
   </div>
 
-  <!-- FORMULÁŘ BEZ PRESMEROVÁNÍ -->
+  <!-- FORMULÁŘ BEZ PŘESMĚROVÁNÍ PROTI CHYBĚ 500 -->
   <form id="taxiForm" onsubmit="handleFormSubmit(event)">
     <div class="input-group">
       <label for="name">JMÉNO A PŘÍJMENÍ</label>
@@ -631,9 +631,9 @@ function setGolfStatus(state) { db.ref('golf_active').set(state); }
 let alarmInterval = null;
 let isDriverMode = false;
 
-/* BEZCHYBNÉ ODESÍLÁNÍ FORMULÁŘE NA POZADÍ PŘES OSTRÝ FORMSUBMIT ENDPOINT */
-function handleFormSubmit(event) {
-  event.preventDefault(); // ZABRÁNÍ PŘESMĚROVÁNÍ NA CHYBOVOU STRÁNKU
+/* FUNKCE PRO ODESLÁNÍ FORMULÁŘE (S OCHRANOU PROTI PŘESMĚROVÁNÍ) */
+function handleFormSubmit(e) {
+  if (e) e.preventDefault(); // Nekompromisně zamezí přesměrování stránky
   saveCustomerData();
 
   const nameVal = document.getElementById('name').value;
@@ -651,14 +651,14 @@ function handleFormSubmit(event) {
     timestamp: Date.now()
   };
 
-  // 1. ZÁPIS DO FIREBASE PRO ŘIDIČE (OKAMŽITĚ POD `latest_order`)
+  // 1. IHNED ZÁPIS DO FIREBASE PRO ŘIDIČE (OKAMŽITÉ HOUKÁNÍ SIRÉNY)
   db.ref('latest_order').set(orderData);
 
   const btnSubmit = document.getElementById('btnSubmitForm');
   btnSubmit.disabled = true;
   btnSubmit.innerText = "⏳ Odesílám...";
 
-  // 2. ODESLÁNÍ E-MAILU PŘES SPOLEHLIVÝ FETCH
+  // 2. ODESLÁNÍ E-MAILU PŘES FETCH NA POZADÍ
   const formData = new FormData();
   formData.append('_subject', 'Nová objednávka Taxi Martin!');
   formData.append('_captcha', 'false');
@@ -675,14 +675,13 @@ function handleFormSubmit(event) {
       'Accept': 'application/json'
     }
   })
-  .then(response => {
+  .then(() => {
     alert("✅ Objednávka byla úspěšně odeslána!");
     document.getElementById('to').value = '';
     btnSubmit.disabled = false;
     btnSubmit.innerText = "🚖 Potvrdit objednávku";
   })
-  .catch(error => {
-    // V případě síťového výpadku e-mailu – zákazník ví, že byla objednávka přijata
+  .catch(() => {
     alert("✅ Objednávka byla úspěšně přijata!");
     document.getElementById('to').value = '';
     btnSubmit.disabled = false;
