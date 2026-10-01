@@ -429,6 +429,7 @@ input:focus {
     <p style="margin: 0 0 4px 0; font-size: 0.8rem; color: #28a745; font-weight: bold;">🚕 Řidič - Živé vysílání jízdy</p>
     <div id="driver-live-status" style="font-size: 0.75rem; color: #ccc; margin-bottom: 6px;">GPS vysílání vypnuto</div>
     <button type="button" id="btn-toggle-gps" class="btn-admin-on" onclick="toggleGpsTracking()">▶ SPUSTIT JÍZDU (Vysílat GPS)</button>
+    <button type="button" onclick="logoutDriver()" style="background: transparent; color: #8e8e93; border: none; width: 100%; font-size: 0.75rem; text-decoration: underline; margin-top: 6px; cursor: pointer;">Odhlásit řidiče (vyžadovat PIN znovu)</button>
   </div>
 
   <form id="taxiForm" onsubmit="handleFormSubmit(event)">
@@ -535,9 +536,17 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+let isDriverMode = false;
+
 window.addEventListener('DOMContentLoaded', () => {
   if(localStorage.getItem('taxi_name')) document.getElementById('name').value = localStorage.getItem('taxi_name');
   if(localStorage.getItem('taxi_phone')) document.getElementById('phone').value = localStorage.getItem('taxi_phone');
+  
+  // Obnovení stavu řidiče po načtení
+  if(localStorage.getItem('isDriverMode') === 'true') {
+    isDriverMode = true;
+    document.getElementById('driver-gps-panel').style.display = 'block';
+  }
 });
 
 function saveCustomerData() {
@@ -568,7 +577,7 @@ function ziskatPolohu() {
     function(error) {
       gpsStatus.innerText = "❌ Poloha nebyla načtena.";
     },
-    { enableHighAccuracy: false, maximumAge: 60000 }
+    { enableHighAccuracy: true, maximumAge: 10000 }
   );
 }
 
@@ -601,7 +610,6 @@ db.ref('golf_active').on('value', (snapshot) => {
 function setGolfStatus(state) { db.ref('golf_active').set(state); }
 
 let alarmInterval = null;
-let isDriverMode = false;
 
 async function handleFormSubmit(e) {
   if (e) e.preventDefault(); 
@@ -681,6 +689,9 @@ function startDriverAlarm(data) {
 function playSirenSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
@@ -734,6 +745,14 @@ let driverClicks = 0;
 let driverTimer = null;
 function toggleDriverPanel() {
   const panel = document.getElementById('driver-gps-panel');
+  
+  // Pokud je řidič už ověřen v localStorage, PIN nepožadujeme znovu
+  if (localStorage.getItem('isDriverMode') === 'true') {
+    isDriverMode = true;
+    panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    return;
+  }
+
   if (panel.style.display === 'block') {
     panel.style.display = 'none';
     return;
@@ -746,11 +765,20 @@ function toggleDriverPanel() {
     if (prompt("Zadejte PIN řidiče:") === "118564702") {
       panel.style.display = 'block';
       isDriverMode = true;
+      localStorage.setItem('isDriverMode', 'true');
     }
     driverClicks = 0;
   } else {
     driverTimer = setTimeout(() => { driverClicks = 0; }, 1500);
   }
+}
+
+function logoutDriver() {
+  localStorage.removeItem('isDriverMode');
+  isDriverMode = false;
+  document.getElementById('driver-gps-panel').style.display = 'none';
+  if (watchPositionId !== null) toggleGpsTracking();
+  alert("Řidič byl odhlášen.");
 }
 
 const taxiIconHtml = `
@@ -864,25 +892,42 @@ async function calculateETA(driverLat, driverLng, destLat, destLng) {
 
 let wakeLock = null;
 let silentAudioCtx = null;
+let keepAliveInterval = null;
+
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch (e) {
+      console.log('Wake Lock chyba:', e);
+    }
+  }
+}
 
 function startBackgroundKeepAlive() {
-  if ('wakeLock' in navigator) {
-    navigator.wakeLock.request('screen').then((wl) => {
-      wakeLock = wl;
-    }).catch((e) => console.log('Wake Lock chyba:', e));
-  }
+  requestWakeLock();
 
   try {
     if (!silentAudioCtx) {
       silentAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = silentAudioCtx.createOscillator();
-      const gain = silentAudioCtx.createGain();
-      gain.gain.value = 0.001;
-      osc.connect(gain);
-      gain.connect(silentAudioCtx.destination);
-      osc.start();
-    } else if (silentAudioCtx.state === 'suspended') {
+    }
+    if (silentAudioCtx.state === 'suspended') {
       silentAudioCtx.resume();
+    }
+
+    // Tichý tón běžící ve smyčce udrží Audio rozhraní aktivní i na pozadí
+    if (!keepAliveInterval) {
+      keepAliveInterval = setInterval(() => {
+        if (silentAudioCtx && silentAudioCtx.state === 'running') {
+          const osc = silentAudioCtx.createOscillator();
+          const gain = silentAudioCtx.createGain();
+          gain.gain.value = 0.0001; 
+          osc.connect(gain);
+          gain.connect(silentAudioCtx.destination);
+          osc.start();
+          osc.stop(silentAudioCtx.currentTime + 0.1);
+        }
+      }, 5000);
     }
   } catch (e) {
     console.log('Audio KeepAlive chyba:', e);
@@ -894,10 +939,24 @@ function stopBackgroundKeepAlive() {
     wakeLock.release().catch(() => {});
     wakeLock = null;
   }
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+    keepAliveInterval = null;
+  }
   if (silentAudioCtx) {
     silentAudioCtx.suspend().catch(() => {});
   }
 }
+
+// Při rozsvícení obrazovky / návratu na záložku se automaticky znovu obnoví WakeLock
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && watchPositionId !== null) {
+    await requestWakeLock();
+    if (silentAudioCtx && silentAudioCtx.state === 'suspended') {
+      silentAudioCtx.resume();
+    }
+  }
+});
 
 let watchPositionId = null;
 
@@ -940,7 +999,7 @@ function toggleGpsTracking() {
   navigator.geolocation.getCurrentPosition(
     (pos) => updateDriverFirebaseLocation(pos),
     (err) => console.log("První načtení polohy:", err),
-    { enableHighAccuracy: false, maximumAge: 60000 }
+    { enableHighAccuracy: true, maximumAge: 0 }
   );
 
   watchPositionId = navigator.geolocation.watchPosition(
@@ -951,8 +1010,9 @@ function toggleGpsTracking() {
       console.warn("GPS varování:", err);
     },
     { 
-      enableHighAccuracy: false, 
-      maximumAge: 5000 
+      enableHighAccuracy: true, 
+      maximumAge: 0,
+      timeout: 10000
     }
   );
 }
