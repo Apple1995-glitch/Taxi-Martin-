@@ -635,10 +635,8 @@ async function handleFormSubmit(e) {
   };
 
   try {
-    // 1. Odeslání do EmailJS se SPRÁVNÝM Template ID: template_jdfiqgi
     await emailjs.send('service_pygrhbf', 'template_jdfiqgi', templateParams, 'WC8_QWRtyH5A19vaz');
 
-    // 2. Uložení objednávky do Firebase (spustí řidičovskou sirénu)
     db.ref('latest_order').set(orderData);
     db.ref('orders').push(orderData);
 
@@ -711,32 +709,48 @@ function stopDriverAlarm() {
 }
 
 let adminClicks = 0;
+let adminTimer = null;
 function toggleAdminPanel() {
-  adminClicks++;
-  if (adminClicks >= 3) {
-    const panel = document.getElementById('admin-panel');
-    if (panel.style.display !== 'block') {
-      if (prompt("Zadejte PIN správce:") === "1875") panel.style.display = 'block';
-    } else panel.style.display = 'none';
-    adminClicks = 0;
+  const panel = document.getElementById('admin-panel');
+  if (panel.style.display === 'block') {
+    panel.style.display = 'none';
+    return;
   }
-  setTimeout(() => { adminClicks = 0; }, 2000);
+
+  adminClicks++;
+  clearTimeout(adminTimer);
+
+  if (adminClicks >= 3) {
+    if (prompt("Zadejte PIN správce:") === "1875") {
+      panel.style.display = 'block';
+    }
+    adminClicks = 0;
+  } else {
+    adminTimer = setTimeout(() => { adminClicks = 0; }, 1500);
+  }
 }
 
 let driverClicks = 0;
+let driverTimer = null;
 function toggleDriverPanel() {
-  driverClicks++;
-  if (driverClicks >= 3) {
-    const panel = document.getElementById('driver-gps-panel');
-    if (panel.style.display !== 'block') {
-      if (prompt("Zadejte PIN řidiče:") === "118564702") {
-        panel.style.display = 'block';
-        isDriverMode = true;
-      }
-    } else panel.style.display = 'none';
-    driverClicks = 0;
+  const panel = document.getElementById('driver-gps-panel');
+  if (panel.style.display === 'block') {
+    panel.style.display = 'none';
+    return;
   }
-  setTimeout(() => { driverClicks = 0; }, 2000);
+
+  driverClicks++;
+  clearTimeout(driverTimer);
+
+  if (driverClicks >= 3) {
+    if (prompt("Zadejte PIN řidiče:") === "118564702") {
+      panel.style.display = 'block';
+      isDriverMode = true;
+    }
+    driverClicks = 0;
+  } else {
+    driverTimer = setTimeout(() => { driverClicks = 0; }, 1500);
+  }
 }
 
 const taxiIconHtml = `
