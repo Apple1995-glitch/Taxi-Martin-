@@ -537,6 +537,7 @@ if ('serviceWorker' in navigator) {
 }
 
 let isDriverMode = false;
+let watchPositionId = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   if(localStorage.getItem('taxi_name')) document.getElementById('name').value = localStorage.getItem('taxi_name');
@@ -546,6 +547,11 @@ window.addEventListener('DOMContentLoaded', () => {
   if(localStorage.getItem('isDriverMode') === 'true') {
     isDriverMode = true;
     document.getElementById('driver-gps-panel').style.display = 'block';
+    
+    // POKUD byla jízda aktivní před uspáním/obnovením, automaticky ji zapneme dál
+    if (localStorage.getItem('isGpsActive') === 'true') {
+      startDriverGpsProcess();
+    }
   }
 });
 
@@ -746,7 +752,6 @@ let driverTimer = null;
 function toggleDriverPanel() {
   const panel = document.getElementById('driver-gps-panel');
   
-  // Pokud je řidič už ověřen v localStorage, PIN nepožadujeme znovu
   if (localStorage.getItem('isDriverMode') === 'true') {
     isDriverMode = true;
     panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
@@ -775,9 +780,10 @@ function toggleDriverPanel() {
 
 function logoutDriver() {
   localStorage.removeItem('isDriverMode');
+  localStorage.removeItem('isGpsActive');
   isDriverMode = false;
   document.getElementById('driver-gps-panel').style.display = 'none';
-  if (watchPositionId !== null) toggleGpsTracking();
+  if (watchPositionId !== null) stopDriverGpsProcess();
   alert("Řidič byl odhlášen.");
 }
 
@@ -893,6 +899,7 @@ async function calculateETA(driverLat, driverLng, destLat, destLng) {
 let wakeLock = null;
 let silentAudioCtx = null;
 let keepAliveInterval = null;
+let gpsWatchdogTimer = null;
 
 async function requestWakeLock() {
   if ('wakeLock' in navigator) {
@@ -915,7 +922,6 @@ function startBackgroundKeepAlive() {
       silentAudioCtx.resume();
     }
 
-    // Tichý tón běžící ve smyčce udrží Audio rozhraní aktivní i na pozadí
     if (!keepAliveInterval) {
       keepAliveInterval = setInterval(() => {
         if (silentAudioCtx && silentAudioCtx.state === 'running') {
@@ -948,18 +954,6 @@ function stopBackgroundKeepAlive() {
   }
 }
 
-// Při rozsvícení obrazovky / návratu na záložku se automaticky znovu obnoví WakeLock
-document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible' && watchPositionId !== null) {
-    await requestWakeLock();
-    if (silentAudioCtx && silentAudioCtx.state === 'suspended') {
-      silentAudioCtx.resume();
-    }
-  }
-});
-
-let watchPositionId = null;
-
 function updateDriverFirebaseLocation(pos) {
   db.ref('driver').set({ 
     lat: pos.coords.latitude, 
@@ -973,28 +967,18 @@ function updateDriverFirebaseLocation(pos) {
   btn.className = "btn-admin-off";
 }
 
-function toggleGpsTracking() {
+function startDriverGpsProcess() {
+  setGolfStatus(true);
+  localStorage.setItem('isGpsActive', 'true');
+  startBackgroundKeepAlive();
+
   const statusDiv = document.getElementById('driver-live-status');
   const btn = document.getElementById('btn-toggle-gps');
+  statusDiv.innerText = "⏳ Připojuji GPS...";
 
   if (watchPositionId !== null) {
     navigator.geolocation.clearWatch(watchPositionId);
-    watchPositionId = null;
-    stopBackgroundKeepAlive();
-    statusDiv.innerText = "GPS vysílání vypnuto";
-    btn.innerText = "▶️ SPUSTIT JÍZDU (Vysílat GPS)";
-    btn.className = "btn-admin-on";
-    return;
   }
-
-  if (!navigator.geolocation) {
-    alert("Váš telefon nepodporuje sledování GPS.");
-    return;
-  }
-
-  setGolfStatus(true);
-  startBackgroundKeepAlive();
-  statusDiv.innerText = "⏳ Připojuji GPS...";
 
   navigator.geolocation.getCurrentPosition(
     (pos) => updateDriverFirebaseLocation(pos),
@@ -1007,7 +991,7 @@ function toggleGpsTracking() {
       updateDriverFirebaseLocation(pos);
     },
     (err) => {
-      console.warn("GPS varování:", err);
+      console.warn("GPS varování na pozadí:", err);
     },
     { 
       enableHighAccuracy: true, 
@@ -1015,7 +999,60 @@ function toggleGpsTracking() {
       timeout: 10000
     }
   );
+
+  // Spuštění hlídače - pokud Android GPS zruší, znovu ho obnovíme
+  if (!gpsWatchdogTimer) {
+    gpsWatchdogTimer = setInterval(() => {
+      if (localStorage.getItem('isGpsActive') === 'true' && document.visibilityState === 'visible') {
+        startBackgroundKeepAlive();
+      }
+    }, 15000);
+  }
 }
+
+function stopDriverGpsProcess() {
+  if (watchPositionId !== null) {
+    navigator.geolocation.clearWatch(watchPositionId);
+    watchPositionId = null;
+  }
+  if (gpsWatchdogTimer) {
+    clearInterval(gpsWatchdogTimer);
+    gpsWatchdogTimer = null;
+  }
+  localStorage.removeItem('isGpsActive');
+  stopBackgroundKeepAlive();
+
+  const statusDiv = document.getElementById('driver-live-status');
+  const btn = document.getElementById('btn-toggle-gps');
+  statusDiv.innerText = "GPS vysílání vypnuto";
+  btn.innerText = "▶️️ SPUSTIT JÍZDU (Vysílat GPS)";
+  btn.className = "btn-admin-on";
+}
+
+function toggleGpsTracking() {
+  if (localStorage.getItem('isGpsActive') === 'true') {
+    stopDriverGpsProcess();
+  } else {
+    if (!navigator.geolocation) {
+      alert("Váš telefon nepodporuje sledování GPS.");
+      return;
+    }
+    startDriverGpsProcess();
+  }
+}
+
+// AUTOMATICKÉ OBNOVENÍ GPS A ZÁMKU PŘI ROZSVÍCENÍ OBRAZOVKY / NÁVRATU DO APLIKACE
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible') {
+    const isDriver = localStorage.getItem('isDriverMode') === 'true';
+    const isGpsActive = localStorage.getItem('isGpsActive') === 'true';
+
+    if (isDriver && isGpsActive) {
+      console.log("📱 Displej rozsvícen / Aplikace otevřena: Obnovuji GPS vysílání...");
+      startDriverGpsProcess();
+    }
+  }
+});
 </script>
 </body>
 </html>
