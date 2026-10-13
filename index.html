@@ -543,12 +543,10 @@ window.addEventListener('DOMContentLoaded', () => {
   if(localStorage.getItem('taxi_name')) document.getElementById('name').value = localStorage.getItem('taxi_name');
   if(localStorage.getItem('taxi_phone')) document.getElementById('phone').value = localStorage.getItem('taxi_phone');
   
-  // Obnovení stavu řidiče po načtení
   if(localStorage.getItem('isDriverMode') === 'true') {
     isDriverMode = true;
     document.getElementById('driver-gps-panel').style.display = 'block';
     
-    // POKUD byla jízda aktivní před uspáním/obnovením, automaticky ji zapneme dál
     if (localStorage.getItem('isGpsActive') === 'true') {
       startDriverGpsProcess();
     }
@@ -589,9 +587,10 @@ function ziskatPolohu() {
 
 const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
 
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-  attribution: 'Tiles &copy; Esri',
-  maxZoom: 18
+// OPRAVENÁ MAPA: OpenStreetMap s kompletními ulicemi a silnicemi
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> přispěvatelé',
+  maxZoom: 19
 }).addTo(map);
 
 const firebaseConfig = {
@@ -1000,7 +999,6 @@ function startDriverGpsProcess() {
     }
   );
 
-  // Spuštění hlídače - pokud Android GPS zruší, znovu ho obnovíme
   if (!gpsWatchdogTimer) {
     gpsWatchdogTimer = setInterval(() => {
       if (localStorage.getItem('isGpsActive') === 'true' && document.visibilityState === 'visible') {
@@ -1025,7 +1023,7 @@ function stopDriverGpsProcess() {
   const statusDiv = document.getElementById('driver-live-status');
   const btn = document.getElementById('btn-toggle-gps');
   statusDiv.innerText = "GPS vysílání vypnuto";
-  btn.innerText = "▶️️ SPUSTIT JÍZDU (Vysílat GPS)";
+  btn.innerText = "▶ SPUSTIT JÍZDU (Vysílat GPS)";
   btn.className = "btn-admin-on";
 }
 
@@ -1041,7 +1039,6 @@ function toggleGpsTracking() {
   }
 }
 
-// AUTOMATICKÉ OBNOVENÍ GPS A ZÁMKU PŘI ROZSVÍCENÍ OBRAZOVKY / NÁVRATU DO APLIKACE
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') {
     const isDriver = localStorage.getItem('isDriverMode') === 'true';
