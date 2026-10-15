@@ -587,10 +587,9 @@ function ziskatPolohu() {
 
 const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
 
-// OPRAVENÁ MAPA: Spolehlivý veřejný podklad CartoDB Positron (zobrazuje detailní ulice, silnice a čísla v ČR, bez API klíčů a bez chyb)
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> přispěvatelé &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  subdomains: 'abcd',
+// OPRAVENÁ MAPA: Oficiální OpenStreetMap dlaždice (zaručeně fungují všude, zobrazují ulice a silnice, žádný API klíč potřeba)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> přispěvatelé',
   maxZoom: 19
 }).addTo(map);
 
