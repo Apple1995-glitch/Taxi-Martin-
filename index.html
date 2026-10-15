@@ -593,11 +593,12 @@ function ziskatPolohu() {
 
 const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
 
-// Opravená spolehlivá mapa bez nutnosti API klíčů
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap',
+// Opravená mapa pro Android i iPhone (bez blokování 403)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO',
   maxZoom: 19
 }).addTo(map);
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyDl3iTvQd1FWFE2ilnOQ7x4g8mHdLusB_U",
