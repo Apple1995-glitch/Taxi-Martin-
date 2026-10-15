@@ -587,9 +587,10 @@ function ziskatPolohu() {
 
 const map = L.map('map', { zoomControl: false }).setView([50.355, 15.921], 15);
 
-// OPRAVENÁ MAPA: Stabilní veřejné OpenStreetMap dlaždice přes enterprise server (bez chyb a bez API klíče)
-L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> přispěvatelé',
+// OPRAVENÁ MAPA: Spolehlivý veřejný podklad CartoDB Positron (zobrazuje detailní ulice, silnice a čísla v ČR, bez API klíčů a bez chyb)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> přispěvatelé &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: 'abcd',
   maxZoom: 19
 }).addTo(map);
 
@@ -1031,4 +1032,25 @@ function toggleGpsTracking() {
   if (localStorage.getItem('isGpsActive') === 'true') {
     stopDriverGpsProcess();
   } else {
-    if (!navigator.geolocation
+    if (!navigator.geolocation) {
+      alert("Váš telefon nepodporuje sledování GPS.");
+      return;
+    }
+    startDriverGpsProcess();
+  }
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible') {
+    const isDriver = localStorage.getItem('isDriverMode') === 'true';
+    const isGpsActive = localStorage.getItem('isGpsActive') === 'true';
+
+    if (isDriver && isGpsActive) {
+      console.log("📱 Displej rozsvícen / Aplikace otevřena: Obnovuji GPS vysílání...");
+      startDriverGpsProcess();
+    }
+  }
+});
+</script>
+</body>
+</html>
